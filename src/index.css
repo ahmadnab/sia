@@ -1,0 +1,63 @@
+/* Font: Plus Jakarta Sans / Inter */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+/* Design System: Sia "Slate & Sky" Theme */
+
+@theme {
+  /* Primary Colors (Brand) */
+  --color-primary-500: #0EA5E9;
+  --color-primary-600: #0284C7;
+  --color-secondary-500: #14B8A6;
+
+  /* Neutral Colors (Structure) */
+  --color-surface-900: #0F172A;
+  --color-surface-800: #1E293B;
+  --color-surface-700: #334155;
+  --color-surface-50: #F8FAFC;
+
+  /* Text Colors */
+  --color-text-100: #F1F5F9;
+  --color-text-200: #E2E8F0;
+  --color-text-400: #94A3B8;
+  --color-text-900: #0F172A;
+
+  /* Semantic Colors */
+  --color-danger: #EF4444;
+  --color-warning: #F59E0B;
+  --color-success: #22C55E;
+
+  /* Font Family */
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+}
+
+/* Base Styles */
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Focus Ring Utility for Accessibility */
+.focus-ring {
+  @apply focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2 focus:ring-offset-slate-900;
+}
+
+/* Custom Scrollbar for Dark Mode */
+.dark-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.dark-scrollbar::-webkit-scrollbar-track {
+  background: #1E293B;
+}
+
+.dark-scrollbar::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 4px;
+}
+
+.dark-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #64748B;
+}
