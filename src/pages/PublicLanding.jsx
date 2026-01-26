@@ -1,22 +1,24 @@
 import { Link } from 'react-router-dom';
 import { Bot, Shield, MessageCircle, BarChart3, Users, ChevronRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import ThemeToggle from '../components/ThemeToggle';
 
 const PublicLanding = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 via-slate-900 to-slate-800 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800 bg-slate-50 dark:bg-gradient-to-b dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
       {/* Navigation */}
       <nav className="px-6 py-4 flex items-center justify-between max-w-6xl mx-auto">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center">
             <Bot className="text-white" size={24} />
           </div>
-          <span className="text-xl font-bold text-white">Sia</span>
+          <span className="text-xl font-bold text-white dark:text-slate-100">Sia</span>
         </div>
         <div className="flex items-center gap-4">
+          <ThemeToggle />
           <Link 
             to="/student" 
-            className="text-slate-300 hover:text-white transition-colors"
+            className="text-slate-300 dark:text-slate-300 hover:text-white dark:hover:text-white transition-colors"
           >
             Student Login
           </Link>
@@ -36,10 +38,10 @@ const PublicLanding = () => {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <h1 className="text-4xl md:text-6xl font-bold text-white leading-tight">
+          <h1 className="text-4xl md:text-6xl font-bold text-white dark:text-slate-100 leading-tight">
             Student Inclusive Analysis
           </h1>
-          <p className="text-xl md:text-2xl text-slate-400 mt-6 max-w-3xl mx-auto">
+          <p className="text-xl md:text-2xl text-slate-400 dark:text-slate-400 mt-6 max-w-3xl mx-auto">
             Bridge the communication gap between students and administration with 
             AI-powered insights and <span className="text-teal-400">guaranteed anonymity</span>.
           </p>
@@ -66,7 +68,7 @@ const PublicLanding = () => {
       {/* Features Section */}
       <section className="px-6 py-20 bg-slate-800/50">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-white text-center mb-12">
+          <h2 className="text-3xl font-bold text-white dark:text-slate-100 text-center mb-12">
             Why Sia?
           </h2>
           
@@ -76,15 +78,15 @@ const PublicLanding = () => {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              className="bg-slate-800 border border-slate-700 rounded-2xl p-6"
+              className="bg-slate-800 dark:bg-slate-800 border border-slate-700 dark:border-slate-700 rounded-2xl p-6"
             >
               <div className="w-12 h-12 bg-teal-500/20 rounded-xl flex items-center justify-center mb-4">
                 <Shield className="text-teal-400" size={24} />
               </div>
-              <h3 className="text-xl font-semibold text-white mb-2">
+              <h3 className="text-xl font-semibold text-white dark:text-slate-100 mb-2">
                 Double-Blind Anonymity
               </h3>
-              <p className="text-slate-400">
+              <p className="text-slate-400 dark:text-slate-400">
                 Your feedback is mathematically untraceable. Even database admins 
                 cannot link responses to your identity.
               </p>
@@ -96,15 +98,15 @@ const PublicLanding = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.1 }}
-              className="bg-slate-800 border border-slate-700 rounded-2xl p-6"
+              className="bg-slate-800 dark:bg-slate-800 border border-slate-700 dark:border-slate-700 rounded-2xl p-6"
             >
               <div className="w-12 h-12 bg-sky-500/20 rounded-xl flex items-center justify-center mb-4">
                 <MessageCircle className="text-sky-400" size={24} />
               </div>
-              <h3 className="text-xl font-semibold text-white mb-2">
+              <h3 className="text-xl font-semibold text-white dark:text-slate-100 mb-2">
                 24/7 AI Companion
               </h3>
-              <p className="text-slate-400">
+              <p className="text-slate-400 dark:text-slate-400">
                 Get instant, personalized academic support from Sia — an AI that 
                 understands your semester and learning stage.
               </p>
@@ -116,15 +118,15 @@ const PublicLanding = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
-              className="bg-slate-800 border border-slate-700 rounded-2xl p-6"
+              className="bg-slate-800 dark:bg-slate-800 border border-slate-700 dark:border-slate-700 rounded-2xl p-6"
             >
               <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center mb-4">
                 <BarChart3 className="text-amber-400" size={24} />
               </div>
-              <h3 className="text-xl font-semibold text-white mb-2">
+              <h3 className="text-xl font-semibold text-white dark:text-slate-100 mb-2">
                 Clustered Communication
               </h3>
-              <p className="text-slate-400">
+              <p className="text-slate-400 dark:text-slate-400">
                 Coordinators see aggregated insights like "80% found lectures too fast" 
                 — not 100 individual complaints.
               </p>
@@ -136,7 +138,7 @@ const PublicLanding = () => {
       {/* How It Works */}
       <section className="px-6 py-20">
         <div className="max-w-6xl mx-auto">
-          <h2 className="text-3xl font-bold text-white text-center mb-12">
+          <h2 className="text-3xl font-bold text-white dark:text-slate-100 text-center mb-12">
             How It Works
           </h2>
           
@@ -147,7 +149,7 @@ const PublicLanding = () => {
                 <Users className="text-sky-400" size={24} />
                 <h3 className="text-xl font-semibold text-white">For Students</h3>
               </div>
-              <ul className="space-y-4 text-slate-300">
+              <ul className="space-y-4 text-slate-300 dark:text-slate-300">
                 <li className="flex items-start gap-3">
                   <span className="text-sky-400 font-bold">1.</span>
                   Click the magic link in your email — no password needed
@@ -173,7 +175,7 @@ const PublicLanding = () => {
                 <BarChart3 className="text-teal-400" size={24} />
                 <h3 className="text-xl font-semibold text-white">For Coordinators</h3>
               </div>
-              <ul className="space-y-4 text-slate-300">
+              <ul className="space-y-4 text-slate-300 dark:text-slate-300">
                 <li className="flex items-start gap-3">
                   <span className="text-teal-400 font-bold">1.</span>
                   Upload your class roster via CSV
@@ -199,10 +201,10 @@ const PublicLanding = () => {
       {/* CTA Section */}
       <section className="px-6 py-20 bg-sky-500/10 border-t border-sky-500/20">
         <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-3xl font-bold text-white mb-4">
+          <h2 className="text-3xl font-bold text-white dark:text-slate-100 mb-4">
             Ready to transform student feedback?
           </h2>
-          <p className="text-slate-400 mb-8">
+          <p className="text-slate-400 dark:text-slate-400 mb-8">
             Join the institutions using Sia to create a safer, more responsive 
             learning environment.
           </p>
@@ -221,9 +223,9 @@ const PublicLanding = () => {
         <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2">
             <Bot className="text-sky-400" size={20} />
-            <span className="text-slate-400">Sia — Student Inclusive Analysis</span>
+            <span className="text-slate-400 dark:text-slate-400">Sia — Student Inclusive Analysis</span>
           </div>
-          <p className="text-slate-500 text-sm">
+          <p className="text-slate-500 dark:text-slate-500 text-sm">
             Built with privacy at its core.
           </p>
         </div>

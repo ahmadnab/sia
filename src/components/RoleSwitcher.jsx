@@ -10,7 +10,7 @@ const RoleSwitcher = () => {
       {/* Home button */}
       <Link
         to="/"
-        className="flex items-center justify-center w-12 h-12 bg-slate-700 hover:bg-slate-600 text-white rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+        className="flex items-center justify-center w-12 h-12 bg-slate-700 dark:bg-slate-700 hover:bg-slate-600 dark:hover:bg-slate-600 text-white dark:text-white rounded-full shadow-lg transition-all duration-200 hover:scale-105"
         aria-label="Go to home"
       >
         <Home size={20} />
@@ -19,7 +19,7 @@ const RoleSwitcher = () => {
       {/* Role switch button */}
       <Link
         to={isStudent ? '/admin' : '/student'}
-        className="flex items-center gap-2 px-4 py-3 bg-sky-500 hover:bg-sky-600 text-white rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+        className="flex items-center gap-2 px-4 py-3 bg-sky-500 dark:bg-sky-500 hover:bg-sky-600 dark:hover:bg-sky-600 text-white dark:text-white rounded-full shadow-lg transition-all duration-200 hover:scale-105"
         aria-label={`Switch to ${isStudent ? 'Admin' : 'Student'} view`}
       >
         {isStudent ? (

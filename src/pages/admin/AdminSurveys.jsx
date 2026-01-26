@@ -172,10 +172,10 @@ const AdminSurveys = () => {
               exit={{ opacity: 0, y: -20 }}
               className={`mb-6 p-4 rounded-xl flex items-center gap-3 ${
                 notification.type === 'success' 
-                  ? 'bg-green-50 border border-green-200 text-green-700' 
+                  ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300' 
                   : notification.type === 'error'
-                    ? 'bg-red-50 border border-red-200 text-red-700'
-                    : 'bg-sky-50 border border-sky-200 text-sky-700'
+                    ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
+                    : 'bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-900/30 text-sky-700 dark:text-sky-300'
               }`}
             >
               <Bell size={18} />
@@ -193,8 +193,8 @@ const AdminSurveys = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Survey Manager</h1>
-            <p className="text-slate-500 mt-1">Create and manage anonymous surveys</p>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Survey Manager</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">Create and manage anonymous surveys</p>
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
@@ -208,14 +208,14 @@ const AdminSurveys = () => {
         {/* Draft Surveys */}
         {draftSurveys.length > 0 && (
           <section className="mb-8">
-            <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
               <FileText size={20} className="text-amber-500" />
               Draft Surveys ({draftSurveys.length})
             </h2>
             
             <div className="grid gap-4">
               {draftSurveys.map(survey => (
-                <div key={survey.id} className="bg-amber-50 rounded-xl border border-amber-200 p-6">
+                <div key={survey.id} className="bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-900/30 p-6">
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className="text-lg font-semibold text-slate-900">{survey.title}</h3>
@@ -262,7 +262,7 @@ const AdminSurveys = () => {
 
         {/* Active Surveys */}
         <section className="mb-8">
-          <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
             <Clock size={20} className="text-sky-500" />
             Active Surveys ({activeSurveys.length})
           </h2>
@@ -278,7 +278,7 @@ const AdminSurveys = () => {
                 const publishedDate = survey.publishedAt?.toDate?.() || null;
                 const notifiedDate = survey.notificationsSentAt?.toDate?.() || null;
                 return (
-                <div key={survey.id} className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                <div key={survey.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
                   <div className="flex items-start justify-between">
                     <div>
                       <h3 className="text-lg font-semibold text-slate-900">{survey.title}</h3>
@@ -352,7 +352,7 @@ const AdminSurveys = () => {
         {/* Closed Surveys */}
         {closedSurveys.length > 0 && (
           <section>
-            <h2 className="text-lg font-semibold text-slate-900 mb-4 flex items-center gap-2">
+              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
               <Archive size={20} className="text-slate-400" />
               Closed Surveys ({closedSurveys.length})
             </h2>

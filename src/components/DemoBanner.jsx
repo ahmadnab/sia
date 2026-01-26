@@ -17,17 +17,17 @@ const DemoBanner = () => {
     <>
       {/* Config warning banner */}
       {hasConfigIssues && !dismissed && (
-        <div className="bg-amber-500/90 text-amber-950 px-4 py-2 text-sm flex items-center justify-between">
+        <div className="bg-amber-500/90 dark:bg-amber-600/90 text-amber-950 dark:text-amber-50 px-4 py-2 text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertTriangle size={16} />
             <span>
               <strong>Config Required:</strong> {missingConfigs.join(' & ')} not configured. 
-              Add your keys to <code className="bg-amber-600/30 px-1 rounded">.env</code> to enable real-time features.
+              Add your keys to <code className="bg-amber-600/30 dark:bg-amber-700/40 px-1 rounded">.env</code> to enable real-time features.
             </span>
           </div>
           <button 
             onClick={() => setDismissed(true)}
-            className="p-1 hover:bg-amber-600/30 rounded"
+            className="p-1 hover:bg-amber-600/30 dark:hover:bg-amber-700/40 rounded"
             aria-label="Dismiss banner"
           >
             <X size={16} />
@@ -37,7 +37,7 @@ const DemoBanner = () => {
       
       {/* Demo mode indicator - always show until dismissed */}
       {isFullyConfigured && !demoDismissed && (
-        <div className="bg-sky-500/90 text-white px-4 py-2 text-sm flex items-center justify-between">
+        <div className="bg-sky-500/90 dark:bg-sky-600/90 text-white dark:text-white px-4 py-2 text-sm flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Info size={16} />
             <span>
@@ -47,7 +47,7 @@ const DemoBanner = () => {
           </div>
           <button 
             onClick={() => setDemoDismissed(true)}
-            className="p-1 hover:bg-sky-600/50 rounded"
+            className="p-1 hover:bg-sky-600/50 dark:hover:bg-sky-700/50 rounded"
             aria-label="Dismiss demo banner"
           >
             <X size={16} />

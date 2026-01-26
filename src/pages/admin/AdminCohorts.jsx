@@ -311,7 +311,7 @@ const AdminCohorts = () => {
         {/* Header */}
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
           <div>
-            <h1 className="text-2xl font-bold text-slate-900">Cohort Manager</h1>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Cohort Manager</h1>
             <p className="text-slate-500 mt-1">Create cohorts and import students</p>
           </div>
           <button
@@ -354,7 +354,7 @@ const AdminCohorts = () => {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             {cohorts.map(cohort => (
-              <div key={cohort.id} className="bg-white rounded-xl border border-slate-200 p-6 shadow-sm">
+                <div key={cohort.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="text-lg font-semibold text-slate-900">{cohort.name}</h3>

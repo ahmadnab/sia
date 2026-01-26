@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { MessageCircle, ClipboardList, Shield, ChevronRight, Users } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { subscribeToSurveys, subscribeToCohorts } from '../../services/firebase';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const StudentHome = () => {
   const { studentMilestone, setStudentMilestone, studentCohortId, setStudentCohortId } = useApp();
@@ -31,23 +32,23 @@ const StudentHome = () => {
   const milestones = ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Final Year'];
 
   return (
-    <div className="min-h-screen bg-slate-900 pb-24">
+    <div className="min-h-screen bg-slate-900 dark:bg-slate-900 pb-24">
       {/* Header */}
-      <header className="bg-slate-800 border-b border-slate-700 px-4 py-6">
+      <header className="bg-slate-800 dark:bg-slate-800 border-b border-slate-700 dark:border-slate-700 px-4 py-6">
         <div className="max-w-lg mx-auto">
-          <h1 className="text-2xl font-bold text-white">
-            Hey there! <span className="text-sky-400">👋</span>
+          <h1 className="text-2xl font-bold text-white dark:text-slate-100">
+            Hey there! <span className="text-sky-400 dark:text-sky-400">👋</span>
           </h1>
-          <p className="text-slate-400 mt-1">Welcome to Sia, your academic companion</p>
+          <p className="text-slate-400 dark:text-slate-400 mt-1">Welcome to Sia, your academic companion</p>
           
           {/* Profile Selectors */}
           <div className="mt-4 grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs text-slate-500 uppercase tracking-wide">Your Stage</label>
+              <label className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide">Your Stage</label>
               <select
                 value={studentMilestone}
                 onChange={(e) => setStudentMilestone(e.target.value)}
-                className="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="mt-1 w-full bg-slate-900 dark:bg-slate-800 border border-slate-700 dark:border-slate-600 rounded-lg px-3 py-2 text-slate-100 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
               >
                 {milestones.map(m => (
                   <option key={m} value={m}>{m}</option>
@@ -55,14 +56,14 @@ const StudentHome = () => {
               </select>
             </div>
             <div>
-              <label className="text-xs text-slate-500 uppercase tracking-wide flex items-center gap-1">
+              <label className="text-xs text-slate-500 dark:text-slate-400 uppercase tracking-wide flex items-center gap-1">
                 <Users size={10} />
                 Your Cohort
               </label>
               <select
                 value={studentCohortId}
                 onChange={(e) => setStudentCohortId(e.target.value)}
-                className="mt-1 w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="mt-1 w-full bg-slate-900 dark:bg-slate-800 border border-slate-700 dark:border-slate-600 rounded-lg px-3 py-2 text-slate-100 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
               >
                 <option value="">All Cohorts (Demo)</option>
                 {cohorts.map(c => (
@@ -74,31 +75,36 @@ const StudentHome = () => {
         </div>
       </header>
 
+      {/* Theme Toggle - Fixed Position */}
+      <div className="fixed bottom-24 right-6 z-40">
+        <ThemeToggle />
+      </div>
+
       <main className="max-w-lg mx-auto px-4 py-6 space-y-6">
         {/* Quick Actions */}
         <section>
-          <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-3">Quick Actions</h2>
+          <h2 className="text-sm font-medium text-slate-400 dark:text-slate-400 uppercase tracking-wide mb-3">Quick Actions</h2>
           <div className="grid grid-cols-2 gap-3">
             <Link
               to="/student/chat"
-              className="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:bg-slate-750 hover:border-sky-500/50 transition-all group"
+              className="bg-slate-800 dark:bg-slate-800 border border-slate-700 dark:border-slate-700 rounded-xl p-4 hover:bg-slate-750 dark:hover:bg-slate-700 hover:border-sky-500/50 transition-all group"
             >
-              <div className="w-10 h-10 bg-sky-500/20 rounded-lg flex items-center justify-center mb-3">
-                <MessageCircle className="text-sky-400" size={20} />
+              <div className="w-10 h-10 bg-sky-500/20 dark:bg-sky-500/20 rounded-lg flex items-center justify-center mb-3">
+                <MessageCircle className="text-sky-400 dark:text-sky-400" size={20} />
               </div>
-              <h3 className="font-medium text-white">Chat with Sia</h3>
-              <p className="text-sm text-slate-400 mt-1">Get instant help</p>
+              <h3 className="font-medium text-white dark:text-slate-100">Chat with Sia</h3>
+              <p className="text-sm text-slate-400 dark:text-slate-400 mt-1">Get instant help</p>
             </Link>
             
             <Link
               to="/student/wall"
-              className="bg-slate-800 border border-slate-700 rounded-xl p-4 hover:bg-slate-750 hover:border-teal-500/50 transition-all group"
+              className="bg-slate-800 dark:bg-slate-800 border border-slate-700 dark:border-slate-700 rounded-xl p-4 hover:bg-slate-750 dark:hover:bg-slate-700 hover:border-teal-500/50 transition-all group"
             >
-              <div className="w-10 h-10 bg-teal-500/20 rounded-lg flex items-center justify-center mb-3">
-                <Shield className="text-teal-400" size={20} />
+              <div className="w-10 h-10 bg-teal-500/20 dark:bg-teal-500/20 rounded-lg flex items-center justify-center mb-3">
+                <Shield className="text-teal-400 dark:text-teal-400" size={20} />
               </div>
-              <h3 className="font-medium text-white">Anonymous Wall</h3>
-              <p className="text-sm text-slate-400 mt-1">Your voice, protected</p>
+              <h3 className="font-medium text-white dark:text-slate-100">Anonymous Wall</h3>
+              <p className="text-sm text-slate-400 dark:text-slate-400 mt-1">Your voice, protected</p>
             </Link>
           </div>
         </section>
@@ -106,18 +112,18 @@ const StudentHome = () => {
         {/* Active Surveys */}
         <section>
           <div className="flex items-center justify-between mb-3">
-            <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wide">Active Surveys</h2>
-            <div className="flex items-center gap-1 text-xs text-teal-400">
+            <h2 className="text-sm font-medium text-slate-400 dark:text-slate-400 uppercase tracking-wide">Active Surveys</h2>
+            <div className="flex items-center gap-1 text-xs text-teal-400 dark:text-teal-400">
               <Shield size={12} />
               <span>100% Anonymous</span>
             </div>
           </div>
 
           {surveys.length === 0 ? (
-            <div className="bg-slate-800 border border-slate-700 rounded-xl p-6 text-center">
-              <ClipboardList className="mx-auto text-slate-600 mb-2" size={32} />
-              <p className="text-slate-400">No active surveys right now</p>
-              <p className="text-sm text-slate-500 mt-1">Check back later!</p>
+            <div className="bg-slate-800 dark:bg-slate-800 border border-slate-700 dark:border-slate-700 rounded-xl p-6 text-center">
+              <ClipboardList className="mx-auto text-slate-600 dark:text-slate-500 mb-2" size={32} />
+              <p className="text-slate-400 dark:text-slate-400">No active surveys right now</p>
+              <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">Check back later!</p>
             </div>
           ) : (
             <div className="space-y-3">
@@ -125,18 +131,18 @@ const StudentHome = () => {
                 <Link
                   key={survey.id}
                   to={`/student/survey/${survey.id}`}
-                  className="block bg-slate-800 border border-slate-700 rounded-xl p-4 hover:border-sky-500/50 transition-all group"
+                  className="block bg-slate-800 dark:bg-slate-800 border border-slate-700 dark:border-slate-700 rounded-xl p-4 hover:border-sky-500/50 transition-all group"
                 >
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="font-medium text-white group-hover:text-sky-400 transition-colors">
+                      <h3 className="font-medium text-white dark:text-slate-100 group-hover:text-sky-400 transition-colors">
                         {survey.title}
                       </h3>
-                      <p className="text-sm text-slate-400 mt-1">
+                      <p className="text-sm text-slate-400 dark:text-slate-400 mt-1">
                         {survey.questions?.length || 0} questions
                       </p>
                     </div>
-                    <ChevronRight className="text-slate-600 group-hover:text-sky-400 transition-colors" size={20} />
+                    <ChevronRight className="text-slate-600 dark:text-slate-500 group-hover:text-sky-400 transition-colors" size={20} />
                   </div>
                 </Link>
               ))}
@@ -145,14 +151,14 @@ const StudentHome = () => {
         </section>
 
         {/* Privacy Assurance */}
-        <section className="bg-slate-800/50 border border-slate-700 rounded-xl p-4">
+        <section className="bg-slate-800/50 dark:bg-slate-800/50 border border-slate-700 dark:border-slate-700 rounded-xl p-4">
           <div className="flex items-start gap-3">
-            <div className="w-8 h-8 bg-teal-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
-              <Shield className="text-teal-400" size={16} />
+            <div className="w-8 h-8 bg-teal-500/20 dark:bg-teal-500/20 rounded-lg flex items-center justify-center flex-shrink-0">
+              <Shield className="text-teal-400 dark:text-teal-400" size={16} />
             </div>
             <div>
-              <h3 className="font-medium text-white text-sm">Your Privacy Matters</h3>
-              <p className="text-xs text-slate-400 mt-1">
+              <h3 className="font-medium text-white dark:text-slate-100 text-sm">Your Privacy Matters</h3>
+              <p className="text-xs text-slate-400 dark:text-slate-400 mt-1">
                 Survey responses are completely anonymous. We use a double-blind system — 
                 even database admins can't link your answers to your identity.
               </p>
