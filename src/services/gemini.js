@@ -1,56 +1,67 @@
-// Gemini API Service for Sia
-// Uses Google's Gemini 1.5 Flash model
+// DeepSeek API Service for Sia (replacing Gemini)
+// Uses DeepSeek's reasoner model for chat and chat model for other features
 
-const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
-// Using gemini-2.5-flash - current free tier model (Jan 2026)
-const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
+const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 
-// Check if Gemini is configured
-export const isGeminiConfigured = () => {
-  return !!(GEMINI_API_KEY && GEMINI_API_KEY !== 'your_gemini_api_key');
+// Model configurations
+const MODELS = {
+  REASONER: 'deepseek-reasoner', // Thinking model for student chat
+  CHAT: 'deepseek-chat'          // Standard model for other features
 };
 
-// Base function to call Gemini API
-const callGemini = async (prompt, systemInstruction = '') => {
+// Check if DeepSeek is configured (keeping function name for compatibility)
+export const isGeminiConfigured = () => {
+  return !!(DEEPSEEK_API_KEY && DEEPSEEK_API_KEY !== 'your_deepseek_api_key');
+};
+
+// Base function to call DeepSeek API
+const callDeepSeek = async (messages, model = MODELS.CHAT, maxTokens = 2048, temperature = 0.7) => {
   if (!isGeminiConfigured()) {
-    throw new Error('Gemini API key not configured');
+    throw new Error('DeepSeek API key not configured');
   }
 
   const requestBody = {
-    contents: [
-      {
-        parts: [{ text: prompt }]
-      }
-    ],
-    generationConfig: {
-      temperature: 0.7,
-      topK: 40,
-      topP: 0.95,
-      maxOutputTokens: 1024,
-    }
+    model: model,
+    messages: messages,
+    temperature: temperature,
+    max_tokens: maxTokens
   };
 
-  if (systemInstruction) {
-    requestBody.systemInstruction = {
-      parts: [{ text: systemInstruction }]
-    };
+  try {
+    const response = await fetch(DEEPSEEK_API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+      },
+      body: JSON.stringify(requestBody)
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `DeepSeek API error: ${response.status}`);
+    }
+
+    const data = await response.json();
+
+    // Check if response was cut off
+    const finishReason = data.choices?.[0]?.finish_reason;
+    if (finishReason === 'length') {
+      console.warn('Response truncated due to max_tokens limit. Consider increasing maxTokens.');
+    }
+
+    // Extract response content
+    const content = data.choices?.[0]?.message?.content || '';
+
+    // For reasoner model, also extract reasoning if available (optional, not used for now)
+    const reasoning = data.choices?.[0]?.message?.reasoning_content || null;
+
+    return { content, reasoning };
+  } catch (error) {
+    console.error('DeepSeek API call failed:', error);
+    throw error;
   }
-
-  const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(requestBody)
-  });
-
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.error?.message || 'Gemini API error');
-  }
-
-  const data = await response.json();
-  return data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 };
 
 // ========================
@@ -58,9 +69,14 @@ const callGemini = async (prompt, systemInstruction = '') => {
 // ========================
 
 export const generateSurveyQuestions = async (topic) => {
-  const systemInstruction = `You are an educational survey designer. You MUST respond with ONLY valid JSON, no markdown, no explanation.`;
-  
-  const prompt = `Generate 5 survey questions about "${topic}" for university students.
+  const messages = [
+    {
+      role: 'system',
+      content: 'You are an educational survey designer. You MUST respond with ONLY valid JSON, no markdown, no explanation.'
+    },
+    {
+      role: 'user',
+      content: `Generate 5 survey questions about "${topic}" for university students.
 
 Requirements:
 - Mix of scale (1-10) and text questions
@@ -68,32 +84,34 @@ Requirements:
 - Be specific to the topic
 
 Respond with ONLY this JSON format (no markdown code blocks, no other text):
-[{"type":"scale","question":"Your question here","min":1,"max":10,"minLabel":"Low","maxLabel":"High"},{"type":"text","question":"Your question here"}]`;
+[{"type":"scale","question":"Your question here","min":1,"max":10,"minLabel":"Low","maxLabel":"High"},{"type":"text","question":"Your question here"}]`
+    }
+  ];
 
   try {
-    const response = await callGemini(prompt, systemInstruction);
-    
+    const { content } = await callDeepSeek(messages, MODELS.CHAT, 1024, 0.7);
+
     // Try to extract JSON from response (handle various formats)
     // 1. Try to find JSON array in the response
-    const jsonMatch = response.match(/\[[\s\S]*?\]/);
+    const jsonMatch = content.match(/\[[\s\S]*?\]/);
     if (jsonMatch) {
       const parsed = JSON.parse(jsonMatch[0]);
       if (Array.isArray(parsed) && parsed.length > 0) {
         return parsed;
       }
     }
-    
+
     // 2. Try to parse the entire response as JSON
     try {
-      const directParse = JSON.parse(response.trim());
+      const directParse = JSON.parse(content.trim());
       if (Array.isArray(directParse)) {
         return directParse;
       }
     } catch {
       // Not direct JSON, continue to fallback
     }
-    
-    console.warn('Could not parse Gemini response, using fallback questions. Response:', response.substring(0, 200));
+
+    console.warn('Could not parse DeepSeek response, using fallback questions. Response:', content.substring(0, 200));
     throw new Error('Invalid response format');
   } catch (error) {
     console.error('Survey generation error:', error);
@@ -113,9 +131,14 @@ Respond with ONLY this JSON format (no markdown code blocks, no other text):
 // ========================
 
 export const analyzeSentiment = async (text) => {
-  const systemInstruction = `You are a sentiment analysis expert for educational feedback. Analyze student responses with empathy and accuracy.`;
-  
-  const prompt = `Analyze the sentiment of this student feedback:
+  const messages = [
+    {
+      role: 'system',
+      content: 'You are a sentiment analysis expert for educational feedback. Analyze student responses with empathy and accuracy.'
+    },
+    {
+      role: 'user',
+      content: `Analyze the sentiment of this student feedback:
 
 "${text}"
 
@@ -124,11 +147,13 @@ Return ONLY a JSON object with this exact format:
   "score": <number from 0-100, where 0 is very negative and 100 is very positive>,
   "tags": [<array of 2-4 relevant keyword tags like "TimeManagement", "ClearInstructions", "Stress", etc.>],
   "summary": "<one sentence summary of the feedback>"
-}`;
+}`
+    }
+  ];
 
   try {
-    const response = await callGemini(prompt, systemInstruction);
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    const { content } = await callDeepSeek(messages, MODELS.CHAT, 512, 0.7);
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
       return JSON.parse(jsonMatch[0]);
     }
@@ -152,7 +177,7 @@ export const chatWithSia = async (message, milestone = 'Student', chatHistory = 
   // Safety check for crisis keywords
   const crisisKeywords = ['suicide', 'kill myself', 'end my life', 'self-harm', 'hurt myself'];
   const lowerMessage = message.toLowerCase();
-  
+
   if (crisisKeywords.some(keyword => lowerMessage.includes(keyword))) {
     return {
       response: `I'm really concerned about what you've shared. Please know that you're not alone, and there are people who want to help.
@@ -206,15 +231,33 @@ HELPFUL STRATEGIES:
 
 Remember: You're here to support and empower them, not replace human mentors and instructors.`;
 
-  // Build conversation context
-  const conversationContext = chatHistory.length > 0 
-    ? `Previous conversation:\n${chatHistory.map(m => `${m.role}: ${m.content}`).join('\n')}\n\nUser's new message: ${message}`
-    : message;
+  // Build messages array with chat history
+  const messages = [
+    {
+      role: 'system',
+      content: systemInstruction
+    }
+  ];
+
+  // Add chat history
+  chatHistory.forEach(msg => {
+    messages.push({
+      role: msg.role === 'user' ? 'user' : 'assistant',
+      content: msg.content
+    });
+  });
+
+  // Add current message
+  messages.push({
+    role: 'user',
+    content: message
+  });
 
   try {
-    const response = await callGemini(conversationContext, systemInstruction);
+    // Use reasoner model for deeper thinking in chat
+    const { content } = await callDeepSeek(messages, MODELS.REASONER, 2048, 0.7);
     return {
-      response: response.trim(),
+      response: content.trim(),
       isCrisisResponse: false
     };
   } catch (error) {
@@ -235,19 +278,25 @@ export const generateResponseSummary = async (responses) => {
     return {
       summary: 'No responses to analyze yet.',
       themes: [],
+      actionItems: [],
       averageSentiment: 0
     };
   }
 
-  const systemInstruction = `You are an educational analytics expert. Summarize student feedback for course coordinators in a clear, actionable way.`;
-  
   const feedbackTexts = responses
     .slice(0, 20) // Limit to last 20 for API efficiency
     .map(r => r.answerText || '')
     .filter(t => t.length > 0)
     .join('\n---\n');
 
-  const prompt = `Analyze these anonymous student feedback responses:
+  const messages = [
+    {
+      role: 'system',
+      content: 'You are an educational analytics expert. Summarize student feedback for course coordinators in a clear, actionable way.'
+    },
+    {
+      role: 'user',
+      content: `Analyze these anonymous student feedback responses:
 
 ${feedbackTexts}
 
@@ -256,21 +305,32 @@ Provide a summary for the course coordinator. Return ONLY a JSON object:
   "summary": "<2-3 sentence executive summary of overall sentiment and key points>",
   "themes": [<array of top 3-5 recurring themes/issues mentioned>],
   "actionItems": [<array of 2-3 suggested actions based on feedback>]
-}`;
+}`
+    }
+  ];
 
   try {
-    const response = await callGemini(prompt, systemInstruction);
-    const jsonMatch = response.match(/\{[\s\S]*\}/);
+    // Use higher token limit for summary generation
+    const { content } = await callDeepSeek(messages, MODELS.CHAT, 2048, 0.7);
+
+    // Try to extract complete JSON from response
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
     if (jsonMatch) {
-      const result = JSON.parse(jsonMatch[0]);
-      // Calculate average sentiment from responses
-      const sentimentScores = responses.filter(r => r.sentimentScore != null).map(r => r.sentimentScore);
-      result.averageSentiment = sentimentScores.length > 0 
-        ? Math.round(sentimentScores.reduce((a, b) => a + b, 0) / sentimentScores.length)
-        : 50;
-      return result;
+      try {
+        const result = JSON.parse(jsonMatch[0]);
+        // Calculate average sentiment from responses
+        const sentimentScores = responses.filter(r => r.sentimentScore != null).map(r => r.sentimentScore);
+        result.averageSentiment = sentimentScores.length > 0
+          ? Math.round(sentimentScores.reduce((a, b) => a + b, 0) / sentimentScores.length)
+          : 50;
+        return result;
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError, 'Response:', content);
+        throw new Error('Invalid JSON in response');
+      }
     }
-    throw new Error('Invalid response format');
+    console.error('No JSON found in response:', content);
+    throw new Error('Invalid response format - no JSON object found');
   } catch (error) {
     console.error('Summary generation error:', error);
     return {

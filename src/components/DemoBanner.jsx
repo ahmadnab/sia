@@ -9,7 +9,7 @@ const DemoBanner = () => {
 
   const missingConfigs = [];
   if (!configStatus.firebase) missingConfigs.push('Firebase');
-  if (!configStatus.gemini) missingConfigs.push('Gemini API');
+  if (!configStatus.gemini) missingConfigs.push('DeepSeek API');
   const hasConfigIssues = missingConfigs.length > 0;
   const isFullyConfigured = configStatus.firebase && configStatus.gemini;
 

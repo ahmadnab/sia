@@ -11,7 +11,7 @@ const StudentSurvey = () => {
   const { surveyId } = useParams();
   const navigate = useNavigate();
   const { configStatus } = useApp();
-  
+
   const [survey, setSurvey] = useState(null);
   const [answers, setAnswers] = useState({});
   const [textFeedback, setTextFeedback] = useState('');
@@ -19,6 +19,7 @@ const StudentSurvey = () => {
   const [submitPhase, setSubmitPhase] = useState(null); // null, 'shredding', 'encrypting', 'complete'
   const [hasAlreadyVoted, setHasAlreadyVoted] = useState(false);
   const [isCheckingVote, setIsCheckingVote] = useState(true);
+  const [studentEmail] = useState(() => localStorage.getItem('studentEmail') || '');
 
   // Check if user has already voted
   useEffect(() => {
@@ -108,7 +109,8 @@ const StudentSurvey = () => {
           answers,
           answerText: allText,
           sentimentScore: sentimentResult.score,
-          aiSummaryTags: sentimentResult.tags
+          aiSummaryTags: sentimentResult.tags,
+          studentEmail: studentEmail // Include student email for response viewing
         });
         
         // Mark as voted SEPARATELY (double-blind: this record cannot be linked to the response)

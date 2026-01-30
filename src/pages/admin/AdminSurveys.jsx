@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Plus, Sparkles, X, Check, Clock, Archive, Edit2, Trash2, GripVertical, Send, FileText, Bell, Users, Mail, Calendar } from 'lucide-react';
+import { Plus, Sparkles, X, Check, Clock, Archive, Edit2, Trash2, GripVertical, Send, FileText, Bell, Users, Mail, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminLayout from '../../components/AdminLayout';
-import { subscribeToSurveys, subscribeToCohorts, createSurvey, closeSurvey, publishSurvey } from '../../services/firebase';
+import { subscribeToSurveys, subscribeToCohorts, createSurvey, closeSurvey, publishSurvey, deleteSurvey, getSurveyResponsesWithStudents } from '../../services/firebase';
 import { generateSurveyQuestions } from '../../services/gemini';
 import { useApp } from '../../context/AppContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -15,6 +15,7 @@ const AdminSurveys = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isCreating, setIsCreating] = useState(false);
   const [notification, setNotification] = useState(null);
+  const [expandedSurveys, setExpandedSurveys] = useState(new Set());
   
   // Survey creation mode: 'manual' or 'ai'
   const [creationMode, setCreationMode] = useState('ai');
@@ -151,6 +152,33 @@ const AdminSurveys = () => {
     }
   };
 
+  const handleDeleteSurvey = async (surveyId, surveyTitle) => {
+    if (!configStatus.firebase) return;
+
+    const confirmed = window.confirm(`Are you sure you want to delete "${surveyTitle}"? This action cannot be undone.`);
+    if (!confirmed) return;
+
+    try {
+      await deleteSurvey(surveyId);
+      showNotification('Survey deleted successfully.', 'success');
+    } catch (error) {
+      console.error('Delete error:', error);
+      showNotification('Failed to delete survey.', 'error');
+    }
+  };
+
+  const toggleSurveyExpansion = (surveyId) => {
+    setExpandedSurveys(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(surveyId)) {
+        newSet.delete(surveyId);
+      } else {
+        newSet.add(surveyId);
+      }
+      return newSet;
+    });
+  };
+
   const showNotification = (message, type = 'info') => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 4000);
@@ -214,48 +242,74 @@ const AdminSurveys = () => {
             </h2>
             
             <div className="grid gap-4">
-              {draftSurveys.map(survey => (
-                <div key={survey.id} className="bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-900/30 p-6">
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{survey.title}</h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        {survey.questions?.length || 0} questions
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
-                        Draft
-                      </span>
-                      <button
-                        onClick={() => handlePublishSurvey(survey.id)}
-                        className="px-3 py-1 bg-sky-500 hover:bg-sky-600 text-white text-sm rounded-lg transition-colors flex items-center gap-1"
-                      >
-                        <Send size={14} />
-                        Publish
-                      </button>
-                    </div>
-                  </div>
-                  
-                  {/* Questions Preview */}
-                  <div className="mt-4 space-y-2">
-                    {survey.questions?.slice(0, 3).map((q, i) => (
-                      <div key={i} className="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
-                        <span className="text-slate-400 dark:text-slate-500">{i + 1}.</span>
-                        <span>{q.question}</span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500 ml-auto">
-                          ({q.type === 'scale' ? 'Scale' : 'Text'})
-                        </span>
+              {draftSurveys.map(survey => {
+                const isExpanded = expandedSurveys.has(survey.id);
+                const questionsToShow = isExpanded ? survey.questions : survey.questions?.slice(0, 3);
+                return (
+                  <div key={survey.id} className="bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-900/30 p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{survey.title}</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                          {survey.questions?.length || 0} questions
+                        </p>
                       </div>
-                    ))}
-                    {survey.questions?.length > 3 && (
-                      <p className="text-xs text-slate-400 dark:text-slate-500">
-                        +{survey.questions.length - 3} more questions
-                      </p>
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
+                          Draft
+                        </span>
+                        <button
+                          onClick={() => handleDeleteSurvey(survey.id, survey.title)}
+                          className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-colors"
+                          title="Delete draft"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                        <button
+                          onClick={() => handlePublishSurvey(survey.id)}
+                          className="px-3 py-1 bg-sky-500 hover:bg-sky-600 text-white text-sm rounded-lg transition-colors flex items-center gap-1"
+                        >
+                          <Send size={14} />
+                          Publish
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Questions Preview */}
+                    {survey.questions && survey.questions.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        {questionsToShow?.map((q, i) => (
+                          <div key={i} className="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
+                            <span className="text-slate-400 dark:text-slate-500 font-medium min-w-[20px]">{i + 1}.</span>
+                            <span className="flex-1">{q.question || <span className="text-slate-400 dark:text-slate-500 italic">No question text</span>}</span>
+                            <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                              ({q.type === 'scale' ? 'Scale' : 'Text'})
+                            </span>
+                          </div>
+                        ))}
+                        {survey.questions.length > 3 && (
+                          <button
+                            onClick={() => toggleSurveyExpansion(survey.id)}
+                            className="text-sm text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 flex items-center gap-1 mt-2"
+                          >
+                            {isExpanded ? (
+                              <>
+                                <ChevronUp size={16} />
+                                Show less
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown size={16} />
+                                Show {survey.questions.length - 3} more question{survey.questions.length - 3 !== 1 ? 's' : ''}
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}
@@ -277,10 +331,12 @@ const AdminSurveys = () => {
                 const cohort = survey.cohortId ? cohorts.find(c => c.id === survey.cohortId) : null;
                 const publishedDate = survey.publishedAt?.toDate?.() || null;
                 const notifiedDate = survey.notificationsSentAt?.toDate?.() || null;
+                const isExpanded = expandedSurveys.has(survey.id);
+                const questionsToShow = isExpanded ? survey.questions : survey.questions?.slice(0, 3);
                 return (
                 <div key={survey.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{survey.title}</h3>
                       <div className="flex items-center gap-2 mt-1 flex-wrap">
                         <p className="text-sm text-slate-500 dark:text-slate-400">
@@ -306,7 +362,7 @@ const AdminSurveys = () => {
                       </button>
                     </div>
                   </div>
-                  
+
                   {/* Publish Info */}
                   {(publishedDate || notifiedDate) && (
                     <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
@@ -324,24 +380,39 @@ const AdminSurveys = () => {
                       )}
                     </div>
                   )}
-                  
+
                   {/* Questions Preview */}
-                  <div className="mt-4 space-y-2">
-                    {survey.questions?.slice(0, 3).map((q, i) => (
-                      <div key={i} className="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
-                        <span className="text-slate-400 dark:text-slate-500">{i + 1}.</span>
-                        <span>{q.question}</span>
-                        <span className="text-xs text-slate-400 dark:text-slate-500 ml-auto">
-                          ({q.type === 'scale' ? 'Scale' : 'Text'})
-                        </span>
-                      </div>
-                    ))}
-                    {survey.questions?.length > 3 && (
-                      <p className="text-xs text-slate-400 dark:text-slate-500">
-                        +{survey.questions.length - 3} more questions
-                      </p>
-                    )}
-                  </div>
+                  {survey.questions && survey.questions.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      {questionsToShow?.map((q, i) => (
+                        <div key={i} className="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
+                          <span className="text-slate-400 dark:text-slate-500 font-medium min-w-[20px]">{i + 1}.</span>
+                          <span className="flex-1">{q.question || <span className="text-slate-400 dark:text-slate-500 italic">No question text</span>}</span>
+                          <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                            ({q.type === 'scale' ? 'Scale' : 'Text'})
+                          </span>
+                        </div>
+                      ))}
+                      {survey.questions.length > 3 && (
+                        <button
+                          onClick={() => toggleSurveyExpansion(survey.id)}
+                          className="text-sm text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 flex items-center gap-1 mt-2"
+                        >
+                          {isExpanded ? (
+                            <>
+                              <ChevronUp size={16} />
+                              Show less
+                            </>
+                          ) : (
+                            <>
+                              <ChevronDown size={16} />
+                              Show {survey.questions.length - 3} more question{survey.questions.length - 3 !== 1 ? 's' : ''}
+                            </>
+                          )}
+                        </button>
+                      )}
+                    </div>
+                  )}
                 </div>
                 );
               })}
@@ -358,21 +429,67 @@ const AdminSurveys = () => {
             </h2>
             
             <div className="grid gap-4">
-              {closedSurveys.map(survey => (
-                <div key={survey.id} className="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h3 className="font-semibold text-slate-700 dark:text-slate-300">{survey.title}</h3>
-                      <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                        {survey.questions?.length || 0} questions
-                      </p>
+              {closedSurveys.map(survey => {
+                const isExpanded = expandedSurveys.has(survey.id);
+                const questionsToShow = isExpanded ? survey.questions : survey.questions?.slice(0, 3);
+                return (
+                  <div key={survey.id} className="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <h3 className="font-semibold text-slate-700 dark:text-slate-300">{survey.title}</h3>
+                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                          {survey.questions?.length || 0} questions
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-full">
+                          Closed
+                        </span>
+                        <button
+                          onClick={() => handleDeleteSurvey(survey.id, survey.title)}
+                          className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-colors"
+                          title="Delete closed survey"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
                     </div>
-                    <span className="px-3 py-1 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-full">
-                      Closed
-                    </span>
+
+                    {/* Questions Preview */}
+                    {survey.questions && survey.questions.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        {questionsToShow?.map((q, i) => (
+                          <div key={i} className="text-sm text-slate-600 dark:text-slate-400 flex items-start gap-2">
+                            <span className="text-slate-400 dark:text-slate-500 font-medium min-w-[20px]">{i + 1}.</span>
+                            <span className="flex-1">{q.question || <span className="text-slate-400 dark:text-slate-500 italic">No question text</span>}</span>
+                            <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                              ({q.type === 'scale' ? 'Scale' : 'Text'})
+                            </span>
+                          </div>
+                        ))}
+                        {survey.questions.length > 3 && (
+                          <button
+                            onClick={() => toggleSurveyExpansion(survey.id)}
+                            className="text-sm text-slate-600 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 flex items-center gap-1 mt-2"
+                          >
+                            {isExpanded ? (
+                              <>
+                                <ChevronUp size={16} />
+                                Show less
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown size={16} />
+                                Show {survey.questions.length - 3} more question{survey.questions.length - 3 !== 1 ? 's' : ''}
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}

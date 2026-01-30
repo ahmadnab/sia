@@ -12,6 +12,7 @@ import PublicLanding from './pages/PublicLanding';
 import StudentHome from './pages/student/StudentHome';
 import StudentChat from './pages/student/StudentChat';
 import StudentSurvey from './pages/student/StudentSurvey';
+import StudentResponses from './pages/student/StudentResponses';
 import AnonymousWall from './pages/student/AnonymousWall';
 
 // Admin Pages
@@ -44,6 +45,7 @@ const StudentLayout = () => {
           <Route path="/" element={<StudentHome />} />
           <Route path="/chat" element={<StudentChat />} />
           <Route path="/survey/:surveyId" element={<StudentSurvey />} />
+          <Route path="/responses" element={<StudentResponses />} />
           <Route path="/wall" element={<AnonymousWall />} />
           <Route path="*" element={<Navigate to="/student" replace />} />
         </Routes>

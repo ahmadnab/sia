@@ -1,17 +1,18 @@
 import { initializeApp } from 'firebase/app';
-import { 
-  getFirestore, 
-  collection, 
-  doc, 
-  addDoc, 
-  updateDoc, 
+import {
+  getFirestore,
+  collection,
+  doc,
+  addDoc,
+  updateDoc,
+  deleteDoc,
   getDocs,
-  query, 
-  where, 
+  query,
+  where,
   orderBy,
   onSnapshot,
   writeBatch,
-  serverTimestamp 
+  serverTimestamp
 } from 'firebase/firestore';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 
@@ -97,6 +98,18 @@ export const addStudent = async (studentData) => {
     createdAt: serverTimestamp()
   });
   return docRef.id;
+};
+
+export const deleteStudent = async (studentId) => {
+  if (!db) return false;
+  try {
+    const studentRef = doc(db, 'students', studentId);
+    await deleteDoc(studentRef);
+    return true;
+  } catch (error) {
+    console.error('Error deleting student:', error);
+    return false;
+  }
 };
 
 export const importMockStudents = async (cohortId = null) => {
@@ -306,11 +319,18 @@ export const closeSurvey = async (surveyId) => {
 export const publishSurvey = async (surveyId) => {
   if (!db) return false;
   const surveyRef = doc(db, 'surveys', surveyId);
-  await updateDoc(surveyRef, { 
+  await updateDoc(surveyRef, {
     status: 'Active',
     publishedAt: serverTimestamp(),
     notificationsSentAt: serverTimestamp() // Demo: simulated notification
   });
+  return true;
+};
+
+export const deleteSurvey = async (surveyId) => {
+  if (!db) return false;
+  const surveyRef = doc(db, 'surveys', surveyId);
+  await deleteDoc(surveyRef);
   return true;
 };
 
@@ -346,20 +366,62 @@ export const subscribeToResponses = (callback, surveyId = null) => {
 export const submitAnonymousResponse = async (responseData) => {
   if (!db) return null;
   const responsesRef = collection(db, 'responses');
-  
-  // Double-blind: Only store survey data, NO user ID
-  const anonymousData = {
+
+  // Store response with optional student email for viewing later
+  const responseDoc = {
     surveyId: responseData.surveyId,
     answerText: responseData.answerText,
     answers: responseData.answers || {},
     sentimentScore: responseData.sentimentScore,
     aiSummaryTags: responseData.aiSummaryTags || [],
+    studentEmail: responseData.studentEmail || null, // Optional student identifier
     timestamp: serverTimestamp()
-    // NO userId, NO email, NO identifying information
   };
-  
-  const docRef = await addDoc(responsesRef, anonymousData);
+
+  const docRef = await addDoc(responsesRef, responseDoc);
   return docRef.id;
+};
+
+// Get responses for a specific student
+export const getStudentResponses = async (studentEmail) => {
+  if (!db) return [];
+  try {
+    const responsesRef = collection(db, 'responses');
+    const q = query(
+      responsesRef,
+      where('studentEmail', '==', studentEmail.toLowerCase()),
+      orderBy('timestamp', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Get student responses error:', error);
+    return [];
+  }
+};
+
+// Get all responses for a survey with student emails (admin view)
+export const getSurveyResponsesWithStudents = async (surveyId) => {
+  if (!db) return [];
+  try {
+    const responsesRef = collection(db, 'responses');
+    const q = query(
+      responsesRef,
+      where('surveyId', '==', surveyId),
+      orderBy('timestamp', 'desc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Get survey responses with students error:', error);
+    return [];
+  }
 };
 
 // ===================
@@ -641,10 +703,10 @@ export const seedTestData = async () => {
         cohortId: cohortRefs[0].id, // CS 2024
         status: 'Active',
         questions: [
-          { type: 'scale', text: 'How would you rate your overall wellbeing this semester?' },
-          { type: 'text', text: 'What has been your biggest challenge so far?' },
-          { type: 'scale', text: 'How manageable is your current workload?' },
-          { type: 'text', text: 'What support would help you succeed?' }
+          { type: 'scale', question: 'How would you rate your overall wellbeing this semester?', min: 1, max: 10, minLabel: 'Very Poor', maxLabel: 'Excellent' },
+          { type: 'text', question: 'What has been your biggest challenge so far?' },
+          { type: 'scale', question: 'How manageable is your current workload?', min: 1, max: 10, minLabel: 'Overwhelming', maxLabel: 'Very Manageable' },
+          { type: 'text', question: 'What support would help you succeed?' }
         ]
       },
       {
@@ -652,43 +714,45 @@ export const seedTestData = async () => {
         cohortId: cohortRefs[0].id, // CS 2024
         status: 'Active',
         questions: [
-          { type: 'scale', text: 'How clear and understandable are the lecture materials?' },
-          { type: 'text', text: 'Which topics do you find most confusing?' },
-          { type: 'scale', text: 'How helpful are the lab sessions?' },
-          { type: 'text', text: 'What improvements would you suggest for the course?' }
+          { type: 'scale', question: 'How clear and understandable are the lecture materials?', min: 1, max: 10, minLabel: 'Very Unclear', maxLabel: 'Very Clear' },
+          { type: 'text', question: 'Which topics do you find most confusing or challenging?' },
+          { type: 'scale', question: 'How helpful are the lab sessions and practical exercises?', min: 1, max: 10, minLabel: 'Not Helpful', maxLabel: 'Very Helpful' },
+          { type: 'text', question: 'What improvements would you suggest for the course content or teaching methods?' }
         ]
       },
       {
-        title: 'Career Readiness Survey',
+        title: 'Assignment 3 Feedback',
         cohortId: cohortRefs[1].id, // SE 2023
-        status: 'Active',
+        status: 'Closed',
         questions: [
-          { type: 'scale', text: 'How confident do you feel about your job prospects?' },
-          { type: 'text', text: 'What skills do you feel you need to develop before graduating?' },
-          { type: 'scale', text: 'How useful have the career services been?' },
-          { type: 'text', text: 'What additional career support would be helpful?' }
+          { type: 'scale', question: 'How clear were the assignment requirements and instructions?', min: 1, max: 10, minLabel: 'Very Unclear', maxLabel: 'Very Clear' },
+          { type: 'text', question: 'What aspects of the assignment did you find most challenging?' },
+          { type: 'scale', question: 'Was the time allocated for this assignment appropriate?', min: 1, max: 10, minLabel: 'Too Short', maxLabel: 'More Than Enough' },
+          { type: 'text', question: 'What resources or support would have been helpful for completing this assignment?' }
         ]
       },
       {
-        title: 'Mental Health & Support Services',
-        cohortId: null, // All students
-        status: 'Active',
-        questions: [
-          { type: 'scale', text: 'How would you rate your stress levels this semester?' },
-          { type: 'text', text: 'What causes you the most stress or anxiety?' },
-          { type: 'scale', text: 'How aware are you of available support services?' },
-          { type: 'text', text: 'What would make it easier for you to seek help when needed?' }
-        ]
-      },
-      {
-        title: 'First Year Experience',
+        title: 'End Term Survey',
         cohortId: cohortRefs[2].id, // DS 2025
         status: 'Active',
         questions: [
-          { type: 'scale', text: 'How well are you adjusting to university life?' },
-          { type: 'text', text: 'What has surprised you most about university?' },
-          { type: 'scale', text: 'How supported do you feel by faculty and staff?' },
-          { type: 'text', text: 'What advice would you give to future first-year students?' }
+          { type: 'scale', question: 'How would you rate your overall learning experience this semester?', min: 1, max: 10, minLabel: 'Poor', maxLabel: 'Excellent' },
+          { type: 'text', question: 'What were the most valuable things you learned this semester?' },
+          { type: 'scale', question: 'How well do you feel prepared for the next stage of your studies?', min: 1, max: 10, minLabel: 'Not Prepared', maxLabel: 'Very Prepared' },
+          { type: 'text', question: 'What would you change about the course if you could?' },
+          { type: 'scale', question: 'How likely are you to recommend this course to other students?', min: 1, max: 10, minLabel: 'Not Likely', maxLabel: 'Very Likely' }
+        ]
+      },
+      {
+        title: 'Student Wellbeing & Support Check-in',
+        cohortId: null, // All students
+        status: 'Active',
+        questions: [
+          { type: 'scale', question: 'How would you rate your current stress levels?', min: 1, max: 10, minLabel: 'Very Low', maxLabel: 'Extremely High' },
+          { type: 'text', question: 'What are your main sources of stress or concern right now?' },
+          { type: 'scale', question: 'How aware are you of the support services available to you?', min: 1, max: 10, minLabel: 'Not Aware', maxLabel: 'Very Aware' },
+          { type: 'text', question: 'What would make it easier for you to access support when you need it?' },
+          { type: 'scale', question: 'How comfortable do you feel reaching out for help when struggling?', min: 1, max: 10, minLabel: 'Very Uncomfortable', maxLabel: 'Very Comfortable' }
         ]
       }
     ];
@@ -1008,6 +1072,95 @@ export const subscribeToSummaryCache = (callback) => {
     console.error('Summary cache subscription error:', error);
     callback(null);
   });
+};
+
+// ========================
+// CHAT HISTORY MANAGEMENT
+// ========================
+
+// Save a chat message for a student
+export const saveChatMessage = async (studentEmail, role, content) => {
+  if (!db) return false;
+  try {
+    const chatsRef = collection(db, 'chat_history');
+    await addDoc(chatsRef, {
+      studentEmail: studentEmail.toLowerCase(),
+      role: role, // 'user' or 'assistant'
+      content: content,
+      timestamp: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error('Save chat message error:', error);
+    return false;
+  }
+};
+
+// Get chat history for a student
+export const getChatHistory = async (studentEmail) => {
+  if (!db) return [];
+  try {
+    const chatsRef = collection(db, 'chat_history');
+    const q = query(
+      chatsRef,
+      where('studentEmail', '==', studentEmail.toLowerCase()),
+      orderBy('timestamp', 'asc')
+    );
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+  } catch (error) {
+    console.error('Get chat history error:', error);
+    return [];
+  }
+};
+
+// Subscribe to chat history for a student
+export const subscribeToChatHistory = (studentEmail, callback) => {
+  if (!db) {
+    callback([]);
+    return () => {};
+  }
+
+  const chatsRef = collection(db, 'chat_history');
+  const q = query(
+    chatsRef,
+    where('studentEmail', '==', studentEmail.toLowerCase()),
+    orderBy('timestamp', 'asc')
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const messages = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    callback(messages);
+  }, (error) => {
+    console.error('Chat history subscription error:', error);
+    callback([]);
+  });
+};
+
+// Clear chat history for a student
+export const clearChatHistory = async (studentEmail) => {
+  if (!db) return false;
+  try {
+    const chatsRef = collection(db, 'chat_history');
+    const q = query(chatsRef, where('studentEmail', '==', studentEmail.toLowerCase()));
+    const snapshot = await getDocs(q);
+
+    const batch = writeBatch(db);
+    snapshot.docs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+    return true;
+  } catch (error) {
+    console.error('Clear chat history error:', error);
+    return false;
+  }
 };
 
 // Export Firestore instance for advanced usage

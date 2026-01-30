@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MessageCircle, ClipboardList, Shield, ChevronRight, Users } from 'lucide-react';
+import { MessageCircle, ClipboardList, Shield, ChevronRight, Users, FileText } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { subscribeToSurveys, subscribeToCohorts } from '../../services/firebase';
 import ThemeToggle from '../../components/ThemeToggle';
@@ -84,7 +84,7 @@ const StudentHome = () => {
         {/* Quick Actions */}
         <section>
           <h2 className="text-sm font-medium text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-3">Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
             <Link
               to="/student/chat"
               className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-sky-500/50 transition-all group"
@@ -95,7 +95,18 @@ const StudentHome = () => {
               <h3 className="font-medium text-slate-900 dark:text-white">Chat with Sia</h3>
               <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">Get instant help</p>
             </Link>
-            
+
+            <Link
+              to="/student/responses"
+              className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-purple-500/50 transition-all group"
+            >
+              <div className="w-10 h-10 bg-purple-500/20 dark:bg-purple-500/20 rounded-lg flex items-center justify-center mb-3">
+                <FileText className="text-purple-400 dark:text-purple-400" size={20} />
+              </div>
+              <h3 className="font-medium text-slate-900 dark:text-white">My Responses</h3>
+              <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">View submissions</p>
+            </Link>
+
             <Link
               to="/student/wall"
               className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl p-4 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-teal-500/50 transition-all group"
