@@ -8,7 +8,8 @@ const AdminLayout = ({ children }) => {
     { to: '/admin/cohorts', icon: FolderKanban, label: 'Cohorts' },
     { to: '/admin/roster', icon: Users, label: 'Students' },
     { to: '/admin/surveys', icon: ClipboardList, label: 'Surveys' },
-    { to: '/admin/anonymous-wall', icon: MessageSquare, label: 'Anonymous Wall' },
+    { to: '/admin/student-chats', icon: MessageSquare, label: 'Student Chats' },
+    { to: '/admin/anonymous-wall', icon: Bot, label: 'Anonymous Wall' },
   ];
 
   return (

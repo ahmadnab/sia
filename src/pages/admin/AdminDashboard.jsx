@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { TrendingUp, TrendingDown, Users, MessageSquare, AlertTriangle, RefreshCw, Activity, Clock, PieChart as PieChartIcon, HelpCircle, X, Database, Trash2 } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, MessageSquare, AlertTriangle, RefreshCw, Activity, Clock, PieChart as PieChartIcon, HelpCircle, X, Database, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar } from 'recharts';
 import AdminLayout from '../../components/AdminLayout';
 import { subscribeToResponses, subscribeToStudents, subscribeToSurveys, subscribeToSurveyStatus, getVoteCountsBySurvey, seedTestData, clearTestData, subscribeToSummaryCache, saveSummaryCache } from '../../services/firebase';
@@ -26,6 +26,7 @@ const AdminDashboard = () => {
   const [isClearing, setIsClearing] = useState(false);
   const [seedMessage, setSeedMessage] = useState(null);
   const [clearMessage, setClearMessage] = useState(null);
+  const [showDemoData, setShowDemoData] = useState(false);
 
   useEffect(() => {
     const unsubResponses = subscribeToResponses(setResponses);
@@ -954,88 +955,101 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Test Data Management Section */}
-        <div className="mt-8 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-xl border-2 border-amber-200 dark:border-amber-900/30 p-6 shadow-sm">
-          <div className="flex items-start gap-4 mb-4">
-            <div className="flex-shrink-0 w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
-              <Database className="text-amber-600 dark:text-amber-400" size={24} />
-            </div>
-            <div className="flex-1">
-              <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-300 mb-1">Demo Data Management</h3>
-              <p className="text-sm text-amber-700 dark:text-amber-400">
-                Use these tools to populate or clear your database for demonstration purposes.
-                <span className="font-medium"> Seed creates 3 cohorts, 30 students, 5 surveys, 60 responses, and 20 wall posts.</span>
-              </p>
-            </div>
-          </div>
+        {/* Test Data Management Section - Collapsible */}
+        <div className="mt-8">
+          <button
+            onClick={() => setShowDemoData(!showDemoData)}
+            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+          >
+            <Database size={16} />
+            <span>Demo Data Management</span>
+            {showDemoData ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
 
-          {/* Status Messages */}
-          {seedMessage && (
-            <div className={`mb-4 p-3 rounded-lg border ${
-              seedMessage.type === 'success'
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300'
-                : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
-            }`}>
-              <p className="text-sm font-medium">{seedMessage.text}</p>
+          {showDemoData && (
+            <div className="mt-3 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-xl border-2 border-amber-200 dark:border-amber-900/30 p-6 shadow-sm">
+              <div className="flex items-start gap-4 mb-4">
+                <div className="flex-shrink-0 w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
+                  <Database className="text-amber-600 dark:text-amber-400" size={24} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-300 mb-1">Demo Data Management</h3>
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
+                    Use these tools to populate or clear your database for demonstration purposes.
+                    <span className="font-medium"> Seed creates 3 cohorts, 30 students, 5 surveys, 60 responses, 20 wall posts, and 60+ chat messages.</span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Messages */}
+              {seedMessage && (
+                <div className={`mb-4 p-3 rounded-lg border ${
+                  seedMessage.type === 'success'
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300'
+                    : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
+                }`}>
+                  <p className="text-sm font-medium">{seedMessage.text}</p>
+                </div>
+              )}
+
+              {clearMessage && (
+                <div className={`mb-4 p-3 rounded-lg border ${
+                  clearMessage.type === 'success'
+                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300'
+                    : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
+                }`}>
+                  <p className="text-sm font-medium">{clearMessage.text}</p>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={handleSeedTestData}
+                  disabled={isSeeding || isClearing}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-medium rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSeeding ? (
+                    <>
+                      <LoadingSpinner size="sm" light />
+                      <span>Seeding Data...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Database size={18} />
+                      <span>Seed Test Data</span>
+                    </>
+                  )}
+                </button>
+
+                <button
+                  onClick={handleClearTestData}
+                  disabled={isSeeding || isClearing}
+                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-medium rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isClearing ? (
+                    <>
+                      <LoadingSpinner size="sm" light />
+                      <span>Clearing Data...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={18} />
+                      <span>Clear All Data</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              {/* Warning Notice */}
+              <div className="mt-4 p-3 bg-amber-100 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-900/40 rounded-lg">
+                <p className="text-xs text-amber-800 dark:text-amber-300">
+                  <span className="font-semibold">⚠️ Important:</span> Clear All Data will permanently delete all records from Firebase.
+                  This action cannot be undone. Always backup important data before clearing.
+                </p>
+              </div>
             </div>
           )}
-
-          {clearMessage && (
-            <div className={`mb-4 p-3 rounded-lg border ${
-              clearMessage.type === 'success'
-                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300'
-                : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
-            }`}>
-              <p className="text-sm font-medium">{clearMessage.text}</p>
-            </div>
-          )}
-
-          {/* Action Buttons */}
-          <div className="flex flex-col sm:flex-row gap-3">
-            <button
-              onClick={handleSeedTestData}
-              disabled={isSeeding || isClearing}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-medium rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isSeeding ? (
-                <>
-                  <LoadingSpinner size="sm" light />
-                  <span>Seeding Data...</span>
-                </>
-              ) : (
-                <>
-                  <Database size={18} />
-                  <span>Seed Test Data</span>
-                </>
-              )}
-            </button>
-
-            <button
-              onClick={handleClearTestData}
-              disabled={isSeeding || isClearing}
-              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-medium rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isClearing ? (
-                <>
-                  <LoadingSpinner size="sm" light />
-                  <span>Clearing Data...</span>
-                </>
-              ) : (
-                <>
-                  <Trash2 size={18} />
-                  <span>Clear All Data</span>
-                </>
-              )}
-            </button>
-          </div>
-
-          {/* Warning Notice */}
-          <div className="mt-4 p-3 bg-amber-100 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-900/40 rounded-lg">
-            <p className="text-xs text-amber-800 dark:text-amber-300">
-              <span className="font-semibold">⚠️ Important:</span> Clear All Data will permanently delete all records from Firebase.
-              This action cannot be undone. Always backup important data before clearing.
-            </p>
-          </div>
         </div>
       </div>
     </AdminLayout>

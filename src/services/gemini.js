@@ -341,3 +341,89 @@ Provide a summary for the course coordinator. Return ONLY a JSON object:
     };
   }
 };
+
+// ========================
+// CHAT CONVERSATION SUMMARY
+// ========================
+
+export const generateChatSummary = async (chatMessages, studentInfo = {}) => {
+  if (!chatMessages || chatMessages.length === 0) {
+    return {
+      summary: 'No chat history available.',
+      topics: [],
+      sentiment: 'neutral',
+      concerns: [],
+      recommendations: [],
+      riskLevel: 'low'
+    };
+  }
+
+  // Build conversation transcript
+  const transcript = chatMessages
+    .slice(-50) // Last 50 messages for context efficiency
+    .map(msg => `${msg.role === 'user' ? 'Student' : 'Sia'}: ${msg.content}`)
+    .join('\n\n');
+
+  const studentContext = studentInfo.name
+    ? `Student: ${studentInfo.name} (${studentInfo.email})\nCohort: ${studentInfo.cohortName || 'N/A'}\nRisk Level: ${studentInfo.riskLevel || 'unknown'}\n\n`
+    : '';
+
+  const messages = [
+    {
+      role: 'system',
+      content: `You are an educational counselor analyzing student chat conversations. Provide insights for course coordinators to better support students.
+
+Focus on:
+1. Main topics and concerns discussed
+2. Overall student sentiment and wellbeing indicators
+3. Any red flags or areas needing attention
+4. Actionable recommendations for support
+
+Be empathetic, professional, and privacy-conscious.`
+    },
+    {
+      role: 'user',
+      content: `Analyze this chat conversation between a student and Sia (AI academic companion):
+
+${studentContext}CONVERSATION TRANSCRIPT:
+${transcript}
+
+Provide a comprehensive analysis. Return ONLY a JSON object:
+{
+  "summary": "<2-3 sentence executive summary of the conversation and student's situation>",
+  "topics": [<array of 3-5 main topics or concerns discussed>],
+  "sentiment": "<overall student sentiment: positive, neutral, concerned, or distressed>",
+  "concerns": [<array of specific concerns or red flags, empty if none>],
+  "recommendations": [<array of 2-3 actionable recommendations for staff>],
+  "riskLevel": "<assessed risk level: low, medium, or high>"
+}`
+    }
+  ];
+
+  try {
+    const { content } = await callDeepSeek(messages, MODELS.CHAT, 2048, 0.7);
+
+    const jsonMatch = content.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      try {
+        const result = JSON.parse(jsonMatch[0]);
+        return result;
+      } catch (parseError) {
+        console.error('JSON parse error:', parseError, 'Response:', content);
+        throw new Error('Invalid JSON in response');
+      }
+    }
+    console.error('No JSON found in response:', content);
+    throw new Error('Invalid response format - no JSON object found');
+  } catch (error) {
+    console.error('Chat summary generation error:', error);
+    return {
+      summary: 'Unable to generate summary. Please review conversation manually.',
+      topics: ['Error generating summary'],
+      sentiment: 'neutral',
+      concerns: [],
+      recommendations: ['Review chat history manually'],
+      riskLevel: 'unknown'
+    };
+  }
+};

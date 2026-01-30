@@ -929,6 +929,149 @@ export const seedTestData = async () => {
 
     await statusBatch.commit();
 
+    // ============================================
+    // 7. CREATE CHAT HISTORY (Sample conversations)
+    // ============================================
+    const chatBatch = writeBatch(db);
+    const chatsRef = collection(db, 'chat_history');
+
+    // Create chat conversations for 10 students
+    const chatConversations = [
+      // Bob Martinez (high risk) - struggling
+      {
+        email: 'bob.martinez@uni.edu',
+        messages: [
+          { role: 'user', content: "I'm really struggling with the data structures assignment. I don't even know where to start.", timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "I understand this feels overwhelming. Let's break it down into smaller steps. What specific part of the assignment is confusing you?", timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 60000) },
+          { role: 'user', content: "The binary tree traversal part. I just can't wrap my head around recursion.", timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 120000) },
+          { role: 'assistant', content: "Recursion can be tricky at first. Try drawing out the tree and trace through each recursive call step by step. Start with a simple 3-node tree. Would you like me to suggest some practice problems?", timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 180000) },
+          { role: 'user', content: "Yeah that would help. I'm also worried about failing this class.", timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "Your concern is valid, but there's still time to improve. Have you considered attending the TA's office hours? They can provide one-on-one help with recursion. Also, your professor has office hours on Wednesdays - that could be really helpful.", timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 60000) }
+        ]
+      },
+      // Frank O'Brien (high risk) - serious concerns
+      {
+        email: 'frank.obrien@uni.edu',
+        messages: [
+          { role: 'user', content: "I don't think I belong here. Everyone else seems to understand everything so easily.", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "It sounds like you're experiencing imposter syndrome, which is very common in CS programs. Many of your peers feel the same way but don't show it. What makes you feel this way?", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000 + 60000) },
+          { role: 'user', content: "I failed the last two quizzes. My GPA is dropping and I'm thinking about dropping out.", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000 + 120000) },
+          { role: 'assistant', content: "I'm concerned about what you've shared. Before making any major decisions, please talk to your course coordinator or academic advisor. They can help you create a recovery plan. There are also tutoring services and study groups that can help. Would you be willing to reach out to them?", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000 + 180000) },
+          { role: 'user', content: "I guess so. But I feel like I'm too far behind to catch up.", timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "Many students have felt behind and successfully caught up with the right support. Your mental health matters too - consider reaching out to counseling services if the stress is overwhelming. You're not alone in this.", timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 60000) }
+        ]
+      },
+      // Alice Chen (low risk) - doing well
+      {
+        email: 'alice.chen@uni.edu',
+        messages: [
+          { role: 'user', content: "Hey Sia! I'm working on my final project and wanted to get some advice on structuring it.", timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "Great to hear you're planning ahead! What kind of project are you building?", timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 60000) },
+          { role: 'user', content: "A web app for managing student study groups. I'm thinking React frontend with Node.js backend.", timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 120000) },
+          { role: 'assistant', content: "That's a solid tech stack! For the structure, consider separating your concerns: client folder for React, server folder for Node. Use environment variables for config. Have you thought about the database?", timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000 + 180000) },
+          { role: 'user', content: "I was thinking MongoDB. Also, any tips for the presentation?", timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "MongoDB works well with Node. For the presentation, focus on the problem you're solving and demo the key features. Practice explaining your technical decisions. You've got this!", timestamp: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + 60000) }
+        ]
+      },
+      // David Kumar (medium risk) - workload stress
+      {
+        email: 'david.kumar@uni.edu',
+        messages: [
+          { role: 'user', content: "How do people manage to do all the assignments, projects, AND study for exams?", timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "Time management is definitely challenging! Many successful students use techniques like time-blocking and prioritization. Do you have a study schedule?", timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000 + 60000) },
+          { role: 'user', content: "Not really. I just work on whatever's due soonest.", timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000 + 120000) },
+          { role: 'assistant', content: "That's common but can lead to last-minute stress. Try creating a weekly schedule where you allocate specific time blocks for each subject. Include breaks - they're important! The Pomodoro technique (25 min work, 5 min break) works well for many students.", timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000 + 180000) },
+          { role: 'user', content: "That makes sense. I'll try it out. Thanks!", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) }
+        ]
+      },
+      // Quinn Taylor (high risk) - multiple issues
+      {
+        email: 'quinn.taylor@uni.edu',
+        messages: [
+          { role: 'user', content: "I'm working part-time and taking a full course load. It's too much.", timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "Balancing work and studies is really tough. Have you looked into reducing your course load or finding financial aid options?", timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 60000) },
+          { role: 'user', content: "I need the money though. My grades are suffering but I can't quit my job.", timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 120000) },
+          { role: 'assistant', content: "This is a difficult situation. I really encourage you to speak with your academic advisor and the financial aid office. There may be options like bursaries, scholarships, or emergency funds you don't know about. They're there to help with exactly these situations.", timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 180000) },
+          { role: 'user', content: "I'll try. Just feeling really overwhelmed right now.", timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "I hear you. Remember that asking for help is a strength, not a weakness. Reach out to your coordinator as soon as possible - they want to see you succeed.", timestamp: new Date(Date.now() - 6 * 24 * 60 * 60 * 1000 + 60000) }
+        ]
+      },
+      // Maya Patel (low risk) - career focused
+      {
+        email: 'maya.patel@uni.edu',
+        messages: [
+          { role: 'user', content: "I have an interview for a software engineering internship next week. Any preparation tips?", timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "Congratulations on landing the interview! For technical interviews, practice coding problems on platforms like LeetCode. Focus on explaining your thought process out loud. What company is it with?", timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 60000) },
+          { role: 'user', content: "It's with a fintech startup. They mentioned data structures and algorithms.", timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 120000) },
+          { role: 'assistant', content: "Great! Review arrays, linked lists, trees, and graphs. Practice explaining Big O notation. Also research the company - know their product and recent news. Prepare questions to ask them too - it shows interest!", timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 180000) },
+          { role: 'user', content: "Perfect, thanks! I feel more confident now.", timestamp: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000) }
+        ]
+      },
+      // Leo Santos (medium risk) - assignment help
+      {
+        email: 'leo.santos@uni.edu',
+        messages: [
+          { role: 'user', content: "Can you help me debug my code?", timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "I can guide you through debugging strategies! What error are you getting?", timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000 + 60000) },
+          { role: 'user', content: "Index out of bounds error but I don't know where.", timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000 + 120000) },
+          { role: 'assistant', content: "Try using print statements to check your array indices at each loop iteration. Look for places where you might be accessing array[i+1] without checking if i+1 is valid. What kind of loop are you using?", timestamp: new Date(Date.now() - 8 * 24 * 60 * 60 * 1000 + 180000) },
+          { role: 'user', content: "A for loop. Oh wait, I think I see it - my range is wrong!", timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "Great catch! That's a very common bug. Make sure your loop condition is i < length, not i <= length.", timestamp: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000 + 60000) }
+        ]
+      },
+      // Zack Miller (high risk) - struggling badly
+      {
+        email: 'zack.miller@uni.edu',
+        messages: [
+          { role: 'user', content: "I don't understand anything in my algorithms class.", timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "Algorithms can be challenging, especially at first. What specific topics are you finding difficult?", timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000 + 60000) },
+          { role: 'user', content: "All of it honestly. Sorting, searching, graphs - it's all confusing.", timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000 + 120000) },
+          { role: 'assistant', content: "It sounds like you might need more foundational support. Have you attended any tutoring sessions? The CS tutoring center has drop-in hours specifically for algorithms. I also recommend watching visualization videos - seeing how algorithms work step-by-step can really help.", timestamp: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000 + 180000) },
+          { role: 'user', content: "I'm too embarrassed to go to tutoring. Everyone will think I'm stupid.", timestamp: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "Many students feel this way, but tutoring is for everyone - even top students use it! The tutors are there to help, not judge. Your success is what matters. Please give it a try, and if you're really uncomfortable with group tutoring, ask your professor about one-on-one help.", timestamp: new Date(Date.now() - 9 * 24 * 60 * 60 * 1000 + 60000) }
+        ]
+      },
+      // Olivia Johnson (medium risk) - exam anxiety
+      {
+        email: 'olivia.johnson@uni.edu',
+        messages: [
+          { role: 'user', content: "I always freeze up during exams even though I know the material.", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "Test anxiety is really common. What happens when you freeze - do you blank out or get too stressed to think?", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000 + 60000) },
+          { role: 'user', content: "Both. My mind just goes blank and I panic.", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000 + 120000) },
+          { role: 'assistant', content: "Try these strategies: Before the exam, do deep breathing exercises. During the exam, if you blank out, skip that question and come back to it. Start with easier questions to build confidence. Also, practice under timed conditions when studying. Have you tried any anxiety management techniques?", timestamp: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000 + 180000) },
+          { role: 'user', content: "Not really. I'll try the breathing thing. Thanks.", timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "You're welcome! If the anxiety continues to be a problem, the university counseling center can teach you more coping strategies. Good luck!", timestamp: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000 + 60000) }
+        ]
+      },
+      // Emma Rodriguez (low risk) - project collaboration
+      {
+        email: 'emma.rodriguez@uni.edu',
+        messages: [
+          { role: 'user', content: "Our group project is going well but one member isn't contributing much.", timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000) },
+          { role: 'assistant', content: "Group dynamics can be tricky. Have you tried talking to them directly about it?", timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 60000) },
+          { role: 'user', content: "Not yet. I don't want to seem mean.", timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 120000) },
+          { role: 'assistant', content: "It's not mean to have a respectful conversation. Try: 'Hey, I've noticed you haven't been able to make some meetings. Is everything okay? How can we help you contribute?' Give them a chance to explain - they might be dealing with something. If it continues, talk to your professor.", timestamp: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000 + 180000) },
+          { role: 'user', content: "That's a good approach. I'll try that. Thanks!", timestamp: new Date(Date.now() - 12 * 60 * 60 * 1000) }
+        ]
+      }
+    ];
+
+    // Add all chat messages to the batch
+    chatConversations.forEach(conversation => {
+      conversation.messages.forEach(msg => {
+        const chatDocRef = doc(chatsRef);
+        chatBatch.set(chatDocRef, {
+          studentEmail: conversation.email,
+          role: msg.role,
+          content: msg.content,
+          timestamp: msg.timestamp
+        });
+      });
+    });
+
+    await chatBatch.commit();
+    results.chatMessages = chatConversations.reduce((sum, conv) => sum + conv.messages.length, 0);
+
     return {
       success: true,
       message: `Successfully seeded test data!`,
@@ -937,7 +1080,8 @@ export const seedTestData = async () => {
         students: results.students.length,
         surveys: results.surveys.length,
         responses: results.responses.length,
-        wallPosts: results.wallPosts.length
+        wallPosts: results.wallPosts.length,
+        chatMessages: results.chatMessages
       }
     };
   } catch (error) {
@@ -954,7 +1098,7 @@ export const clearTestData = async () => {
   if (!db) return { success: false, message: 'Database not configured' };
 
   try {
-    const collections = ['students', 'surveys', 'responses', 'cohorts', 'survey_status', 'anonymous_wall', 'summary_cache'];
+    const collections = ['students', 'surveys', 'responses', 'cohorts', 'survey_status', 'anonymous_wall', 'summary_cache', 'chat_history', 'chat_summary_cache'];
     let totalDeleted = 0;
 
     for (const collectionName of collections) {
@@ -1160,6 +1304,170 @@ export const clearChatHistory = async (studentEmail) => {
   } catch (error) {
     console.error('Clear chat history error:', error);
     return false;
+  }
+};
+
+// Get all students who have chat history (for admin)
+export const getStudentsWithChats = async () => {
+  if (!db) return [];
+  try {
+    const chatsRef = collection(db, 'chat_history');
+    const snapshot = await getDocs(chatsRef);
+
+    // Get unique student emails
+    const emailsSet = new Set();
+    snapshot.docs.forEach(doc => {
+      const data = doc.data();
+      if (data.studentEmail) {
+        emailsSet.add(data.studentEmail);
+      }
+    });
+
+    // Get student details for each email
+    const students = [];
+    const studentsRef = collection(db, 'students');
+
+    for (const email of emailsSet) {
+      const q = query(studentsRef, where('email', '==', email));
+      const studentSnapshot = await getDocs(q);
+
+      if (!studentSnapshot.empty) {
+        students.push({
+          id: studentSnapshot.docs[0].id,
+          ...studentSnapshot.docs[0].data()
+        });
+      } else {
+        // Student not in roster, create basic info
+        students.push({
+          id: email,
+          email: email,
+          name: email.split('@')[0],
+          riskLevel: 'unknown',
+          cohortId: null
+        });
+      }
+    }
+
+    return students;
+  } catch (error) {
+    console.error('Get students with chats error:', error);
+    return [];
+  }
+};
+
+// Get chat analytics for admin dashboard
+export const getChatAnalytics = async (filters = {}) => {
+  if (!db) return [];
+  try {
+    // Get all students with chats
+    const students = await getStudentsWithChats();
+
+    // Apply filters
+    let filteredStudents = students;
+
+    if (filters.riskLevel && filters.riskLevel !== 'all') {
+      filteredStudents = filteredStudents.filter(s => s.riskLevel === filters.riskLevel);
+    }
+
+    if (filters.cohortId && filters.cohortId !== 'all') {
+      filteredStudents = filteredStudents.filter(s => s.cohortId === filters.cohortId);
+    }
+
+    if (filters.search) {
+      const searchLower = filters.search.toLowerCase();
+      filteredStudents = filteredStudents.filter(s =>
+        s.name?.toLowerCase().includes(searchLower) ||
+        s.email?.toLowerCase().includes(searchLower)
+      );
+    }
+
+    // Get message count for each student
+    const chatsRef = collection(db, 'chat_history');
+    const studentsWithCounts = await Promise.all(
+      filteredStudents.map(async (student) => {
+        const q = query(chatsRef, where('studentEmail', '==', student.email));
+        const snapshot = await getDocs(q);
+
+        return {
+          ...student,
+          messageCount: snapshot.size,
+          lastMessageAt: snapshot.docs.length > 0
+            ? snapshot.docs.reduce((latest, doc) => {
+                const docTime = doc.data().timestamp;
+                return !latest || (docTime && docTime > latest) ? docTime : latest;
+              }, null)
+            : null
+        };
+      })
+    );
+
+    // Sort by last message time (most recent first)
+    return studentsWithCounts.sort((a, b) => {
+      if (!a.lastMessageAt) return 1;
+      if (!b.lastMessageAt) return -1;
+      return b.lastMessageAt - a.lastMessageAt;
+    });
+  } catch (error) {
+    console.error('Get chat analytics error:', error);
+    return [];
+  }
+};
+
+// ========================
+// CHAT SUMMARY CACHE
+// ========================
+
+// Save AI-generated chat summary to cache for a specific student
+export const saveChatSummaryCache = async (studentEmail, summary) => {
+  if (!db) return null;
+
+  try {
+    const cacheRef = collection(db, 'chat_summary_cache');
+
+    // Delete existing cache for this student
+    const q = query(cacheRef, where('studentEmail', '==', studentEmail.toLowerCase()));
+    const existingDocs = await getDocs(q);
+    const batch = writeBatch(db);
+    existingDocs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    // Add new cache
+    const docRef = await addDoc(cacheRef, {
+      studentEmail: studentEmail.toLowerCase(),
+      ...summary,
+      cachedAt: serverTimestamp(),
+      messageCount: summary.messageCount || 0
+    });
+
+    return docRef.id;
+  } catch (error) {
+    console.error('Save chat summary cache error:', error);
+    return null;
+  }
+};
+
+// Get cached chat summary for a student
+export const getCachedChatSummary = async (studentEmail) => {
+  if (!db) return null;
+
+  try {
+    const cacheRef = collection(db, 'chat_summary_cache');
+    const q = query(cacheRef, where('studentEmail', '==', studentEmail.toLowerCase()));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) return null;
+
+    // Get the cached summary for this student
+    const doc = snapshot.docs[0];
+    return {
+      id: doc.id,
+      ...doc.data()
+    };
+  } catch (error) {
+    console.error('Get cached chat summary error:', error);
+    return null;
   }
 };
 

@@ -20,6 +20,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminRoster from './pages/admin/AdminRoster';
 import AdminSurveys from './pages/admin/AdminSurveys';
 import AdminCohorts from './pages/admin/AdminCohorts';
+import AdminStudentChats from './pages/admin/AdminStudentChats';
 import AdminAnonymousWall from './pages/admin/AdminAnonymousWall';
 
 // Student Portal Layout
@@ -79,6 +80,7 @@ const AdminLayout = () => {
           <Route path="/roster" element={<AdminRoster />} />
           <Route path="/surveys" element={<AdminSurveys />} />
           <Route path="/cohorts" element={<AdminCohorts />} />
+          <Route path="/student-chats" element={<AdminStudentChats />} />
           <Route path="/anonymous-wall" element={<AdminAnonymousWall />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>

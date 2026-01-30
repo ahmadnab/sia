@@ -32,6 +32,12 @@ const AdminSurveys = () => {
   // Editing state for individual questions
   const [editingQuestionIndex, setEditingQuestionIndex] = useState(null);
 
+  // Responses modal state
+  const [isResponsesModalOpen, setIsResponsesModalOpen] = useState(false);
+  const [selectedSurvey, setSelectedSurvey] = useState(null);
+  const [surveyResponses, setSurveyResponses] = useState([]);
+  const [isLoadingResponses, setIsLoadingResponses] = useState(false);
+
   useEffect(() => {
     const unsubSurveys = subscribeToSurveys(setSurveys);
     const unsubCohorts = subscribeToCohorts(setCohorts);
@@ -40,6 +46,46 @@ const AdminSurveys = () => {
       unsubCohorts();
     };
   }, []);
+
+  const handleViewResponses = async (survey) => {
+    setSelectedSurvey(survey);
+    setIsResponsesModalOpen(true);
+    setIsLoadingResponses(true);
+
+    try {
+      const responses = await getSurveyResponsesWithStudents(survey.id);
+      setSurveyResponses(responses);
+    } catch (error) {
+      console.error('Error loading responses:', error);
+      setSurveyResponses([]);
+    }
+
+    setIsLoadingResponses(false);
+  };
+
+  const handleCloseResponsesModal = () => {
+    setIsResponsesModalOpen(false);
+    setSelectedSurvey(null);
+    setSurveyResponses([]);
+  };
+
+  const formatDate = (timestamp) => {
+    if (!timestamp) return 'N/A';
+    const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const getSentimentColor = (score) => {
+    if (score >= 70) return 'text-green-600 dark:text-green-400';
+    if (score >= 40) return 'text-amber-600 dark:text-amber-400';
+    return 'text-red-600 dark:text-red-400';
+  };
 
   // Reset form when modal closes
   const handleCloseModal = () => {
@@ -355,6 +401,13 @@ const AdminSurveys = () => {
                         Active
                       </span>
                       <button
+                        onClick={() => handleViewResponses(survey)}
+                        className="px-3 py-1 bg-sky-100 dark:bg-sky-900/30 hover:bg-sky-200 dark:hover:bg-sky-800/50 text-sky-700 dark:text-sky-300 text-sm rounded-lg transition-colors flex items-center gap-1"
+                      >
+                        <FileText size={14} />
+                        Responses
+                      </button>
+                      <button
                         onClick={() => handleCloseSurvey(survey.id)}
                         className="px-3 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-sm rounded-lg transition-colors"
                       >
@@ -445,6 +498,13 @@ const AdminSurveys = () => {
                         <span className="px-3 py-1 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-full">
                           Closed
                         </span>
+                        <button
+                          onClick={() => handleViewResponses(survey)}
+                          className="px-3 py-1 bg-sky-100 dark:bg-sky-900/30 hover:bg-sky-200 dark:hover:bg-sky-800/50 text-sky-700 dark:text-sky-300 text-sm rounded-lg transition-colors flex items-center gap-1"
+                        >
+                          <FileText size={14} />
+                          Responses
+                        </button>
                         <button
                           onClick={() => handleDeleteSurvey(survey.id, survey.title)}
                           className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-colors"
@@ -829,6 +889,149 @@ const AdminSurveys = () => {
                       {newSurvey.publishImmediately ? 'Create & Publish' : 'Save as Draft'}
                     </button>
                   </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Responses Modal */}
+        <AnimatePresence>
+          {isResponsesModalOpen && selectedSurvey && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+              onClick={handleCloseResponsesModal}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[85vh] overflow-hidden"
+              >
+                {/* Modal Header */}
+                <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+                  <div>
+                    <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Survey Responses</h2>
+                    <p className="text-sm text-slate-600 dark:text-slate-400 mt-1">{selectedSurvey.title}</p>
+                  </div>
+                  <button
+                    onClick={handleCloseResponsesModal}
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  >
+                    <X size={20} className="text-slate-500" />
+                  </button>
+                </div>
+
+                {/* Modal Body */}
+                <div className="p-6 overflow-y-auto max-h-[calc(85vh-140px)]">
+                  {isLoadingResponses ? (
+                    <div className="flex items-center justify-center py-20">
+                      <LoadingSpinner size="lg" />
+                    </div>
+                  ) : surveyResponses.length === 0 ? (
+                    <div className="text-center py-20">
+                      <FileText className="mx-auto text-slate-300 dark:text-slate-600 mb-4" size={48} />
+                      <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">No responses yet</h3>
+                      <p className="text-slate-500 dark:text-slate-400">This survey hasn't received any responses.</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-6">
+                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                          Total Responses: <span className="text-sky-600 dark:text-sky-400">{surveyResponses.length}</span>
+                        </p>
+                      </div>
+
+                      {surveyResponses.map((response, idx) => (
+                        <div
+                          key={response.id}
+                          className="bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-200 dark:border-slate-600 p-5"
+                        >
+                          <div className="flex items-start justify-between mb-4">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-2">
+                                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                  Response #{idx + 1}
+                                </span>
+                                {response.studentEmail && (
+                                  <span className="text-xs px-3 py-1 bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 rounded-full">
+                                    {response.studentEmail}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                                <Calendar size={12} />
+                                <span>{formatDate(response.timestamp)}</span>
+                              </div>
+                            </div>
+                            {response.sentimentScore !== null && response.sentimentScore !== undefined && (
+                              <div className="text-right">
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Sentiment</p>
+                                <p className={`text-2xl font-bold ${getSentimentColor(response.sentimentScore)}`}>
+                                  {response.sentimentScore}
+                                </p>
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Text Feedback */}
+                          {response.answerText && (
+                            <div className="mb-4">
+                              <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Feedback</p>
+                              <p className="text-sm text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-lg p-3">
+                                {response.answerText}
+                              </p>
+                            </div>
+                          )}
+
+                          {/* Individual Answers */}
+                          {response.answers && Object.keys(response.answers).length > 0 && (
+                            <div className="mb-4">
+                              <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Answers</p>
+                              <div className="space-y-2">
+                                {Object.entries(response.answers).map(([questionId, answer], answerIdx) => (
+                                  <div key={questionId} className="flex items-start gap-3 text-sm">
+                                    <span className="font-medium text-slate-500 dark:text-slate-400 min-w-[24px]">Q{answerIdx + 1}:</span>
+                                    <span className="text-slate-700 dark:text-slate-300">
+                                      {typeof answer === 'number' ? `${answer}/10` : answer}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Tags */}
+                          {response.aiSummaryTags && response.aiSummaryTags.length > 0 && (
+                            <div className="flex flex-wrap gap-2">
+                              {response.aiSummaryTags.map((tag, tagIdx) => (
+                                <span
+                                  key={tagIdx}
+                                  className="px-2 py-1 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full"
+                                >
+                                  {tag}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Modal Footer */}
+                <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                  <button
+                    onClick={handleCloseResponsesModal}
+                    className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  >
+                    Close
+                  </button>
                 </div>
               </motion.div>
             </motion.div>
