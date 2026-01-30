@@ -278,6 +278,7 @@ export const generateResponseSummary = async (responses) => {
     return {
       summary: 'No responses to analyze yet.',
       themes: [],
+      themeSentiments: [],
       actionItems: [],
       averageSentiment: 0
     };
@@ -303,9 +304,15 @@ ${feedbackTexts}
 Provide a summary for the course coordinator. Return ONLY a JSON object:
 {
   "summary": "<2-3 sentence executive summary of overall sentiment and key points>",
-  "themes": [<array of top 3-5 recurring themes/issues mentioned>],
+  "themes": [<array of top 3-5 recurring themes/issues mentioned as simple strings>],
+  "themeSentiments": [
+    {"theme": "<theme name>", "sentiment": <0-100 score>, "mentions": <count of responses mentioning this>},
+    ...for each theme
+  ],
   "actionItems": [<array of 2-3 suggested actions based on feedback>]
-}`
+}
+
+IMPORTANT: themeSentiments must include a sentiment score (0=very negative, 100=very positive) for each theme based on how students feel about that specific topic.`
     }
   ];
 
@@ -323,6 +330,10 @@ Provide a summary for the course coordinator. Return ONLY a JSON object:
         result.averageSentiment = sentimentScores.length > 0
           ? Math.round(sentimentScores.reduce((a, b) => a + b, 0) / sentimentScores.length)
           : 50;
+        // Ensure themeSentiments exists
+        if (!result.themeSentiments) {
+          result.themeSentiments = [];
+        }
         return result;
       } catch (parseError) {
         console.error('JSON parse error:', parseError, 'Response:', content);
@@ -336,6 +347,7 @@ Provide a summary for the course coordinator. Return ONLY a JSON object:
     return {
       summary: 'Unable to generate summary. Please try again.',
       themes: [],
+      themeSentiments: [],
       actionItems: [],
       averageSentiment: 50
     };

@@ -12,7 +12,8 @@ import {
   orderBy,
   onSnapshot,
   writeBatch,
-  serverTimestamp
+  serverTimestamp,
+  Timestamp
 } from 'firebase/firestore';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 
@@ -852,14 +853,25 @@ export const seedTestData = async () => {
 
     const responsesRef = collection(db, 'responses');
 
-    // Generate 12 responses per survey
+    // Helper to generate a random timestamp within the past N days
+    const getRandomPastTimestamp = (daysAgo) => {
+      const now = Date.now();
+      const msAgo = daysAgo * 24 * 60 * 60 * 1000;
+      const randomOffset = Math.floor(Math.random() * msAgo);
+      return Timestamp.fromDate(new Date(now - randomOffset));
+    };
+
+    // Generate 12 responses per survey, spread across last 7 days
     surveyDocRefs.forEach(survey => {
       const surveyResponses = generateResponses(survey.id, 12);
-      surveyResponses.forEach(response => {
+      surveyResponses.forEach((response, idx) => {
         const responseDocRef = doc(responsesRef);
+        // Spread responses across the past 7 days for better trend visualization
+        const daysAgo = Math.floor((idx / surveyResponses.length) * 7);
+        const timestamp = getRandomPastTimestamp(7);
         responsesBatch.set(responseDocRef, {
           ...response,
-          timestamp: serverTimestamp()
+          timestamp: timestamp
         });
         results.responses.push(responseDocRef.id);
       });
