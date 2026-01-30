@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Shield, Send, MessageSquare, Lock, Sparkles } from 'lucide-react';
+import { ArrowLeft, Shield, Send, MessageSquare, Lock, Sparkles, AlertCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { subscribeToWallPosts, submitWallPost } from '../../services/firebase';
 import { analyzeSentiment } from '../../services/gemini';
@@ -13,6 +13,7 @@ const AnonymousWall = () => {
   const [newPost, setNewPost] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitPhase, setSubmitPhase] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
 
   useEffect(() => {
     const unsubscribe = subscribeToWallPosts(setPosts);
@@ -52,6 +53,7 @@ const AnonymousWall = () => {
     } catch (error) {
       console.error('Submit error:', error);
       setSubmitPhase(null);
+      setSubmitError('Failed to share your thought. Please try again.');
     }
     
     setIsSubmitting(false);
@@ -121,6 +123,19 @@ const AnonymousWall = () => {
               <span>No identity stored</span>
             </div>
             
+            {submitError && (
+              <div className="flex items-center gap-2 text-sm text-red-400" role="alert">
+                <AlertCircle size={16} />
+                <span>{submitError}</span>
+                <button
+                  onClick={() => setSubmitError(null)}
+                  className="ml-2 hover:text-red-300"
+                  aria-label="Dismiss error"
+                >
+                  ×
+                </button>
+              </div>
+            )}
             {submitPhase ? (
               <div className="flex items-center gap-2 text-sm text-teal-400">
                 {submitPhase === 'processing' && (
@@ -144,7 +159,10 @@ const AnonymousWall = () => {
               </div>
             ) : (
               <button
-                onClick={handleSubmit}
+                onClick={() => {
+                  setSubmitError(null);
+                  handleSubmit();
+                }}
                 disabled={!newPost.trim() || isSubmitting}
                 className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:cursor-not-allowed text-white rounded-lg transition-colors"
               >

@@ -4,6 +4,51 @@
 const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
 const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 
+// ========================
+// INPUT SANITIZATION
+// ========================
+
+// Sanitize user input to prevent prompt injection attacks
+const sanitizePromptInput = (input, maxLength = 5000) => {
+  if (!input || typeof input !== 'string') return '';
+  
+  // Truncate to max length
+  let sanitized = input.slice(0, maxLength);
+  
+  // Remove potential prompt injection patterns
+  // These patterns attempt to override system instructions
+  const injectionPatterns = [
+    /ignore\s+(all\s+)?(previous|prior|above)\s+(instructions?|prompts?|context)/gi,
+    /disregard\s+(all\s+)?(previous|prior|above)\s+(instructions?|prompts?)/gi,
+    /forget\s+(all\s+)?(previous|prior|above)\s+(instructions?|prompts?)/gi,
+    /new\s+instructions?:/gi,
+    /system\s*:/gi,
+    /assistant\s*:/gi,
+    /\[INST\]/gi,
+    /\[\/INST\]/gi,
+    /<\|im_start\|>/gi,
+    /<\|im_end\|>/gi,
+  ];
+  
+  for (const pattern of injectionPatterns) {
+    sanitized = sanitized.replace(pattern, '[filtered]');
+  }
+  
+  return sanitized.trim();
+};
+
+// Validate that input is a non-empty string
+const validateInput = (input, fieldName = 'input') => {
+  if (!input || typeof input !== 'string') {
+    throw new Error(`${fieldName} must be a non-empty string`);
+  }
+  const trimmed = input.trim();
+  if (trimmed.length === 0) {
+    throw new Error(`${fieldName} cannot be empty`);
+  }
+  return trimmed;
+};
+
 // Model configurations
 const MODELS = {
   REASONER: 'deepseek-reasoner', // Thinking model for student chat
@@ -69,6 +114,21 @@ const callDeepSeek = async (messages, model = MODELS.CHAT, maxTokens = 2048, tem
 // ========================
 
 export const generateSurveyQuestions = async (topic) => {
+  // Validate and sanitize input
+  let safeTopic;
+  try {
+    safeTopic = sanitizePromptInput(validateInput(topic, 'topic'), 500);
+  } catch {
+    // Return fallback questions if topic is invalid
+    return [
+      { type: 'scale', question: 'How would you rate your overall experience?', min: 1, max: 10, minLabel: 'Poor', maxLabel: 'Excellent' },
+      { type: 'text', question: 'What aspects did you find most helpful?' },
+      { type: 'scale', question: 'How clear were the instructions?', min: 1, max: 10, minLabel: 'Unclear', maxLabel: 'Very Clear' },
+      { type: 'text', question: 'What improvements would you suggest?' },
+      { type: 'text', question: 'Any additional comments?' }
+    ];
+  }
+
   const messages = [
     {
       role: 'system',
@@ -76,7 +136,7 @@ export const generateSurveyQuestions = async (topic) => {
     },
     {
       role: 'user',
-      content: `Generate 5 survey questions about "${topic}" for university students.
+      content: `Generate 5 survey questions about "${safeTopic}" for university students.
 
 Requirements:
 - Mix of scale (1-10) and text questions
@@ -131,6 +191,17 @@ Respond with ONLY this JSON format (no markdown code blocks, no other text):
 // ========================
 
 export const analyzeSentiment = async (text) => {
+  // Validate and sanitize input
+  if (!text || typeof text !== 'string' || text.trim().length === 0) {
+    return {
+      score: 50,
+      tags: ['Empty'],
+      summary: 'No text provided'
+    };
+  }
+  
+  const safeText = sanitizePromptInput(text, 2000);
+  
   const messages = [
     {
       role: 'system',
@@ -140,7 +211,7 @@ export const analyzeSentiment = async (text) => {
       role: 'user',
       content: `Analyze the sentiment of this student feedback:
 
-"${text}"
+"${safeText}"
 
 Return ONLY a JSON object with this exact format:
 {
@@ -174,9 +245,21 @@ Return ONLY a JSON object with this exact format:
 // ========================
 
 export const chatWithSia = async (message, milestone = 'Student', chatHistory = []) => {
-  // Safety check for crisis keywords
+  // Validate input
+  if (!message || typeof message !== 'string' || message.trim().length === 0) {
+    return {
+      response: "I didn't catch that. Could you please try again?",
+      isCrisisResponse: false
+    };
+  }
+  
+  // Sanitize the message (but keep original for crisis detection)
+  const originalMessage = message.trim();
+  const safeMessage = sanitizePromptInput(originalMessage, 2000);
+  
+  // Safety check for crisis keywords (use original message for accurate detection)
   const crisisKeywords = ['suicide', 'kill myself', 'end my life', 'self-harm', 'hurt myself'];
-  const lowerMessage = message.toLowerCase();
+  const lowerMessage = originalMessage.toLowerCase();
 
   if (crisisKeywords.some(keyword => lowerMessage.includes(keyword))) {
     return {
@@ -247,10 +330,10 @@ Remember: You're here to support and empower them, not replace human mentors and
     });
   });
 
-  // Add current message
+  // Add current message (sanitized)
   messages.push({
     role: 'user',
-    content: message
+    content: safeMessage
   });
 
   try {
@@ -286,7 +369,7 @@ export const generateResponseSummary = async (responses) => {
 
   const feedbackTexts = responses
     .slice(0, 20) // Limit to last 20 for API efficiency
-    .map(r => r.answerText || '')
+    .map(r => sanitizePromptInput(r.answerText || '', 500))
     .filter(t => t.length > 0)
     .join('\n---\n');
 
@@ -370,10 +453,15 @@ export const generateChatSummary = async (chatMessages, studentInfo = {}) => {
     };
   }
 
-  // Build conversation transcript
+  // Build conversation transcript (sanitize user messages)
   const transcript = chatMessages
     .slice(-50) // Last 50 messages for context efficiency
-    .map(msg => `${msg.role === 'user' ? 'Student' : 'Sia'}: ${msg.content}`)
+    .map(msg => {
+      const content = msg.role === 'user' 
+        ? sanitizePromptInput(msg.content || '', 500)
+        : (msg.content || '');
+      return `${msg.role === 'user' ? 'Student' : 'Sia'}: ${content}`;
+    })
     .join('\n\n');
 
   const studentContext = studentInfo.name

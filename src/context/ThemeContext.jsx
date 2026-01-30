@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 
 const ThemeContext = createContext(null);
 
@@ -78,21 +78,22 @@ export const ThemeProvider = ({ children }) => {
     }
   }, [theme]);
 
-  const toggleTheme = () => {
+  const toggleTheme = useCallback(() => {
     setTheme(prev => {
       // Cycle through: light -> dark -> system -> light
       if (prev === 'light') return 'dark';
       if (prev === 'dark') return 'system';
       return 'light';
     });
-  };
+  }, []);
 
-  const value = {
+  // Memoize context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     theme,
     resolvedTheme,
     setTheme,
     toggleTheme,
-  };
+  }), [theme, resolvedTheme, toggleTheme]);
 
   return (
     <ThemeContext.Provider value={value}>

@@ -1,6 +1,37 @@
 // Simple markdown renderer for chat messages
 // Converts markdown syntax to React elements
 
+// Sanitize URLs to prevent XSS attacks (javascript: protocol, etc.)
+const sanitizeUrl = (url) => {
+  if (!url || typeof url !== 'string') return '#';
+  
+  // Trim whitespace
+  const trimmed = url.trim();
+  
+  // Block javascript:, data:, vbscript: protocols
+  const dangerousProtocols = /^(javascript|data|vbscript):/i;
+  if (dangerousProtocols.test(trimmed)) {
+    return '#';
+  }
+  
+  // Allow http, https, mailto, tel, and relative URLs
+  try {
+    const parsed = new URL(trimmed, window.location.origin);
+    const allowedProtocols = ['http:', 'https:', 'mailto:', 'tel:'];
+    if (!allowedProtocols.includes(parsed.protocol)) {
+      return '#';
+    }
+    return trimmed;
+  } catch {
+    // If URL parsing fails, check if it's a relative URL (starts with / or .)
+    if (trimmed.startsWith('/') || trimmed.startsWith('./') || trimmed.startsWith('../')) {
+      return trimmed;
+    }
+    // Block anything else that couldn't be parsed
+    return '#';
+  }
+};
+
 export const renderMarkdown = (text) => {
   if (!text) return null;
 
@@ -35,10 +66,11 @@ export const renderMarkdown = (text) => {
       // Links: [text](url)
       const linkMatch = remaining.match(/\[(.+?)\]\((.+?)\)/);
       if (linkMatch && linkMatch.index === 0) {
+        const safeUrl = sanitizeUrl(linkMatch[2]);
         parts.push(
           <a
             key={`link-${key++}`}
-            href={linkMatch[2]}
+            href={safeUrl}
             target="_blank"
             rel="noopener noreferrer"
             className="text-sky-400 hover:text-sky-300 underline"

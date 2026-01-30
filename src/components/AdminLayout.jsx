@@ -15,7 +15,7 @@ const AdminLayout = ({ children }) => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col sticky top-0 h-screen">
+      <aside className="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col sticky top-0 h-screen" aria-label="Admin sidebar">
         {/* Logo */}
         <div className="p-6 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">
@@ -30,8 +30,8 @@ const AdminLayout = ({ children }) => {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 p-4">
-          <ul className="space-y-1">
+        <nav className="flex-1 p-4" aria-label="Admin navigation">
+          <ul className="space-y-1" role="list">
             {navItems.map((item) => (
               <li key={item.to}>
                 <NavLink

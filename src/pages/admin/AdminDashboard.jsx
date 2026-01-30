@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { TrendingUp, TrendingDown, Users, MessageSquare, AlertTriangle, RefreshCw, Activity, Clock, PieChart as PieChartIcon, HelpCircle, X, Database, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar } from 'recharts';
 import AdminLayout from '../../components/AdminLayout';
@@ -27,6 +27,18 @@ const AdminDashboard = () => {
   const [seedMessage, setSeedMessage] = useState(null);
   const [clearMessage, setClearMessage] = useState(null);
   const [showDemoData, setShowDemoData] = useState(false);
+
+  // Refs for timeout cleanup to prevent memory leaks
+  const seedTimeoutRef = useRef(null);
+  const clearTimeoutRef = useRef(null);
+
+  // Cleanup timeouts on unmount
+  useEffect(() => {
+    return () => {
+      if (seedTimeoutRef.current) clearTimeout(seedTimeoutRef.current);
+      if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     const unsubResponses = subscribeToResponses(setResponses);
@@ -105,9 +117,12 @@ const AdminDashboard = () => {
 
   // Handle seed test data
   const handleSeedTestData = async () => {
+    // Clear any existing timeout
+    if (seedTimeoutRef.current) clearTimeout(seedTimeoutRef.current);
+    
     if (!configStatus.firebase) {
       setSeedMessage({ type: 'error', text: 'Firebase not configured. Add your Firebase keys to .env first.' });
-      setTimeout(() => setSeedMessage(null), 5000);
+      seedTimeoutRef.current = setTimeout(() => setSeedMessage(null), 5000);
       return;
     }
 
@@ -130,14 +145,17 @@ const AdminDashboard = () => {
     }
 
     setIsSeeding(false);
-    setTimeout(() => setSeedMessage(null), 8000);
+    seedTimeoutRef.current = setTimeout(() => setSeedMessage(null), 8000);
   };
 
   // Handle clear test data
   const handleClearTestData = async () => {
+    // Clear any existing timeout
+    if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
+    
     if (!configStatus.firebase) {
       setClearMessage({ type: 'error', text: 'Firebase not configured. Add your Firebase keys to .env first.' });
-      setTimeout(() => setClearMessage(null), 5000);
+      clearTimeoutRef.current = setTimeout(() => setClearMessage(null), 5000);
       return;
     }
 
@@ -174,7 +192,7 @@ const AdminDashboard = () => {
     }
 
     setIsClearing(false);
-    setTimeout(() => setClearMessage(null), 5000);
+    clearTimeoutRef.current = setTimeout(() => setClearMessage(null), 5000);
   };
 
   // ==================
@@ -399,12 +417,17 @@ const AdminDashboard = () => {
   const themeSentiments = useMemo(() => {
     if (!summary?.themeSentiments || summary.themeSentiments.length === 0) {
       // Fallback: create from themes if themeSentiments not available
+      // Use deterministic values based on index (no Math.random in useMemo)
       if (summary?.themes && summary.themes.length > 0) {
-        return summary.themes.map((theme, idx) => ({
-          theme: theme,
-          sentiment: Math.max(20, Math.min(80, avgSentiment + (Math.random() - 0.5) * 30)),
-          mentions: Math.floor(Math.random() * 10) + 1
-        }));
+        return summary.themes.map((theme, idx) => {
+          // Create deterministic variance based on index
+          const variance = ((idx % 5) - 2) * 10; // -20, -10, 0, 10, 20
+          return {
+            theme: theme,
+            sentiment: Math.max(20, Math.min(80, avgSentiment + variance)),
+            mentions: (idx % 7) + 3 // 3-9 mentions, deterministic
+          };
+        });
       }
       return [];
     }

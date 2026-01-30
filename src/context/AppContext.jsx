@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo, useCallback } from 'react';
 import { signInAnonymousUser, onAuthChange, isFirebaseConfigured } from '../services/firebase';
 import { isGeminiConfigured } from '../services/gemini';
 
@@ -23,30 +23,47 @@ export const AppProvider = ({ children }) => {
       return;
     }
 
+    let isMounted = true;
+
     const unsubscribe = onAuthChange(async (authUser) => {
       if (authUser) {
-        setUser(authUser);
-        setIsLoading(false);
+        if (isMounted) {
+          setUser(authUser);
+          setIsLoading(false);
+        }
       } else {
         // Sign in anonymously
-        const newUser = await signInAnonymousUser();
-        setUser(newUser);
-        setIsLoading(false);
+        try {
+          const newUser = await signInAnonymousUser();
+          if (isMounted) {
+            setUser(newUser);
+            setIsLoading(false);
+          }
+        } catch (error) {
+          console.error('Failed to sign in anonymously:', error);
+          if (isMounted) {
+            setIsLoading(false);
+          }
+        }
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      isMounted = false;
+      unsubscribe?.();
+    };
   }, [configStatus.firebase]);
 
   // Student profile (would come from user profile in real app)
   const [studentMilestone, setStudentMilestone] = useState('Sem 1');
   const [studentCohortId, setStudentCohortId] = useState(''); // Empty = see all surveys (demo)
 
-  const toggleRole = () => {
+  const toggleRole = useCallback(() => {
     setCurrentRole(prev => prev === 'student' ? 'admin' : 'student');
-  };
+  }, []);
 
-  const value = {
+  // Memoize context value to prevent unnecessary re-renders
+  const value = useMemo(() => ({
     currentRole,
     setCurrentRole,
     toggleRole,
@@ -58,7 +75,7 @@ export const AppProvider = ({ children }) => {
     studentCohortId,
     setStudentCohortId,
     isDemo: !configStatus.firebase || !configStatus.gemini
-  };
+  }), [currentRole, toggleRole, user, isLoading, configStatus, studentMilestone, studentCohortId]);
 
   return (
     <AppContext.Provider value={value}>

@@ -8,11 +8,27 @@ import { subscribeToChatHistory, saveChatMessage, clearChatHistory } from '../..
 import LoadingSpinner from '../../components/LoadingSpinner';
 import { renderMarkdown } from '../../utils/markdown';
 
+// Email validation regex - standard format check
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const StudentChat = () => {
   const { studentMilestone, configStatus } = useApp();
-  const [studentEmail, setStudentEmail] = useState(() => localStorage.getItem('studentEmail') || '');
-  const [showEmailPrompt, setShowEmailPrompt] = useState(!localStorage.getItem('studentEmail'));
+  const [studentEmail, setStudentEmail] = useState(() => {
+    try {
+      return localStorage.getItem('studentEmail') || '';
+    } catch {
+      return '';
+    }
+  });
+  const [showEmailPrompt, setShowEmailPrompt] = useState(() => {
+    try {
+      return !localStorage.getItem('studentEmail');
+    } catch {
+      return true;
+    }
+  });
   const [emailInput, setEmailInput] = useState('');
+  const [emailError, setEmailError] = useState('');
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -64,12 +80,25 @@ const StudentChat = () => {
   }, [studentEmail, studentMilestone, configStatus.firebase]);
 
   const handleSetEmail = () => {
-    const email = emailInput.trim();
-    if (!email || !email.includes('@')) {
-      alert('Please enter a valid email address');
+    const email = emailInput.trim().toLowerCase();
+    setEmailError('');
+    
+    if (!email) {
+      setEmailError('Please enter your email address');
       return;
     }
-    localStorage.setItem('studentEmail', email);
+    
+    if (!EMAIL_REGEX.test(email)) {
+      setEmailError('Please enter a valid email address (e.g., you@university.edu)');
+      return;
+    }
+    
+    try {
+      localStorage.setItem('studentEmail', email);
+    } catch (error) {
+      console.warn('Could not save email to localStorage:', error);
+    }
+    
     setStudentEmail(email);
     setShowEmailPrompt(false);
   };
@@ -175,12 +204,25 @@ const StudentChat = () => {
           <input
             type="email"
             value={emailInput}
-            onChange={(e) => setEmailInput(e.target.value)}
-            onKeyPress={(e) => e.key === 'Enter' && handleSetEmail()}
+            onChange={(e) => {
+              setEmailInput(e.target.value);
+              if (emailError) setEmailError('');
+            }}
+            onKeyDown={(e) => e.key === 'Enter' && handleSetEmail()}
             placeholder="your.email@university.edu"
-            className="w-full px-4 py-3 bg-slate-900 border border-slate-700 rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent mb-4"
+            className={`w-full px-4 py-3 bg-slate-900 border rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent ${
+              emailError ? 'border-red-500 mb-2' : 'border-slate-700 mb-4'
+            }`}
+            aria-label="Email address"
+            aria-invalid={!!emailError}
+            aria-describedby={emailError ? 'email-error' : undefined}
             autoFocus
           />
+          {emailError && (
+            <p id="email-error" className="text-red-400 text-sm mb-4" role="alert">
+              {emailError}
+            </p>
+          )}
           <button
             onClick={handleSetEmail}
             className="w-full bg-sky-500 hover:bg-sky-600 text-white py-3 rounded-lg font-medium transition-colors"
@@ -216,15 +258,18 @@ const StudentChat = () => {
               onClick={() => setShowHistoryPanel(!showHistoryPanel)}
               className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
               title="View chat history"
+              aria-label="View chat history"
+              aria-expanded={showHistoryPanel}
             >
-              <History size={18} className="text-slate-400" />
+              <History size={18} className="text-slate-400" aria-hidden="true" />
             </button>
             <button
               onClick={handleClearHistory}
               className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
               title="Clear chat history"
+              aria-label="Clear chat history"
             >
-              <Trash2 size={18} className="text-slate-400" />
+              <Trash2 size={18} className="text-slate-400" aria-hidden="true" />
             </button>
           </div>
         </div>
@@ -260,8 +305,9 @@ const StudentChat = () => {
                 <button
                   onClick={() => setShowHistoryPanel(false)}
                   className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
+                  aria-label="Close history panel"
                 >
-                  <X size={20} className="text-slate-400" />
+                  <X size={20} className="text-slate-400" aria-hidden="true" />
                 </button>
               </div>
 
@@ -417,8 +463,9 @@ const StudentChat = () => {
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
             className="w-12 h-12 lg:w-14 lg:h-14 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-colors"
+            aria-label="Send message"
           >
-            <Send size={20} className="text-white lg:w-6 lg:h-6" />
+            <Send size={20} className="text-white lg:w-6 lg:h-6" aria-hidden="true" />
           </button>
         </div>
       </footer>

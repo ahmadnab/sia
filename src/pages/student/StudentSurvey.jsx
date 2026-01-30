@@ -19,7 +19,14 @@ const StudentSurvey = () => {
   const [submitPhase, setSubmitPhase] = useState(null); // null, 'shredding', 'encrypting', 'complete'
   const [hasAlreadyVoted, setHasAlreadyVoted] = useState(false);
   const [isCheckingVote, setIsCheckingVote] = useState(true);
-  const [studentEmail] = useState(() => localStorage.getItem('studentEmail') || '');
+  const [submitError, setSubmitError] = useState(null);
+  const [studentEmail] = useState(() => {
+    try {
+      return localStorage.getItem('studentEmail') || '';
+    } catch {
+      return '';
+    }
+  });
 
   // Check if user has already voted
   useEffect(() => {
@@ -126,6 +133,7 @@ const StudentSurvey = () => {
       console.error('Submit error:', error);
       setSubmitPhase(null);
       setIsSubmitting(false);
+      setSubmitError('Failed to submit your response. Please try again.');
     }
   };
 
@@ -347,9 +355,27 @@ const StudentSurvey = () => {
           />
         </div>
 
+        {/* Error Message */}
+        {submitError && (
+          <div className="mb-4 p-4 bg-red-500/10 border border-red-500/30 rounded-xl flex items-center gap-3 text-red-400" role="alert">
+            <AlertCircle size={20} className="flex-shrink-0" />
+            <p>{submitError}</p>
+            <button
+              onClick={() => setSubmitError(null)}
+              className="ml-auto text-red-400 hover:text-red-300"
+              aria-label="Dismiss error"
+            >
+              ×
+            </button>
+          </div>
+        )}
+
         {/* Submit Button */}
         <button
-          onClick={handleSubmit}
+          onClick={() => {
+            setSubmitError(null);
+            handleSubmit();
+          }}
           disabled={isSubmitting}
           className="w-full bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 text-white font-medium py-4 rounded-xl transition-colors flex items-center justify-center gap-2"
         >

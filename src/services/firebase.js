@@ -4,6 +4,7 @@ import {
   collection,
   doc,
   addDoc,
+  setDoc,
   updateDoc,
   deleteDoc,
   getDocs,
@@ -93,12 +94,17 @@ export const subscribeToStudents = (callback) => {
 
 export const addStudent = async (studentData) => {
   if (!db) return null;
-  const studentsRef = collection(db, 'students');
-  const docRef = await addDoc(studentsRef, {
-    ...studentData,
-    createdAt: serverTimestamp()
-  });
-  return docRef.id;
+  try {
+    const studentsRef = collection(db, 'students');
+    const docRef = await addDoc(studentsRef, {
+      ...studentData,
+      createdAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error adding student:', error);
+    return null;
+  }
 };
 
 export const deleteStudent = async (studentId) => {
@@ -206,8 +212,8 @@ export const importStudentsFromCSVWithDedup = async (students, cohortId) => {
     const snapshot = await getDocs(q);
     
     const existingEmails = new Set();
-    snapshot.docs.forEach(doc => {
-      const email = doc.data().email?.toLowerCase().trim();
+    snapshot.docs.forEach(docSnap => {
+      const email = docSnap.data().email?.toLowerCase().trim();
       if (email) existingEmails.add(email);
     });
     
@@ -296,43 +302,63 @@ export const subscribeToSurveys = (callback, statusFilter = null) => {
 
 export const createSurvey = async (surveyData) => {
   if (!db) return null;
-  const surveysRef = collection(db, 'surveys');
-  const isPublishing = surveyData.status === 'Active';
-  const docRef = await addDoc(surveysRef, {
-    title: surveyData.title,
-    questions: surveyData.questions || [],
-    cohortId: surveyData.cohortId || null, // Target cohort (null = all students)
-    status: surveyData.status || 'Active', // 'Active', 'Draft', or 'Closed'
-    createdAt: serverTimestamp(),
-    publishedAt: isPublishing ? serverTimestamp() : null,
-    notificationsSentAt: isPublishing ? serverTimestamp() : null // Demo: simulated
-  });
-  return docRef.id;
+  try {
+    const surveysRef = collection(db, 'surveys');
+    const isPublishing = surveyData.status === 'Active';
+    const docRef = await addDoc(surveysRef, {
+      title: surveyData.title,
+      questions: surveyData.questions || [],
+      cohortId: surveyData.cohortId || null, // Target cohort (null = all students)
+      status: surveyData.status || 'Active', // 'Active', 'Draft', or 'Closed'
+      createdAt: serverTimestamp(),
+      publishedAt: isPublishing ? serverTimestamp() : null,
+      notificationsSentAt: isPublishing ? serverTimestamp() : null // Demo: simulated
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating survey:', error);
+    return null;
+  }
 };
 
 export const closeSurvey = async (surveyId) => {
   if (!db) return false;
-  const surveyRef = doc(db, 'surveys', surveyId);
-  await updateDoc(surveyRef, { status: 'Closed' });
-  return true;
+  try {
+    const surveyRef = doc(db, 'surveys', surveyId);
+    await updateDoc(surveyRef, { status: 'Closed' });
+    return true;
+  } catch (error) {
+    console.error('Error closing survey:', error);
+    return false;
+  }
 };
 
 export const publishSurvey = async (surveyId) => {
   if (!db) return false;
-  const surveyRef = doc(db, 'surveys', surveyId);
-  await updateDoc(surveyRef, {
-    status: 'Active',
-    publishedAt: serverTimestamp(),
-    notificationsSentAt: serverTimestamp() // Demo: simulated notification
-  });
-  return true;
+  try {
+    const surveyRef = doc(db, 'surveys', surveyId);
+    await updateDoc(surveyRef, {
+      status: 'Active',
+      publishedAt: serverTimestamp(),
+      notificationsSentAt: serverTimestamp() // Demo: simulated notification
+    });
+    return true;
+  } catch (error) {
+    console.error('Error publishing survey:', error);
+    return false;
+  }
 };
 
 export const deleteSurvey = async (surveyId) => {
   if (!db) return false;
-  const surveyRef = doc(db, 'surveys', surveyId);
-  await deleteDoc(surveyRef);
-  return true;
+  try {
+    const surveyRef = doc(db, 'surveys', surveyId);
+    await deleteDoc(surveyRef);
+    return true;
+  } catch (error) {
+    console.error('Error deleting survey:', error);
+    return false;
+  }
 };
 
 // ====================
@@ -450,13 +476,18 @@ export const subscribeToCohorts = (callback) => {
 
 export const createCohort = async (cohortData) => {
   if (!db) return null;
-  const cohortsRef = collection(db, 'cohorts');
-  const docRef = await addDoc(cohortsRef, {
-    name: cohortData.name,
-    year: cohortData.year,
-    createdAt: serverTimestamp()
-  });
-  return docRef.id;
+  try {
+    const cohortsRef = collection(db, 'cohorts');
+    const docRef = await addDoc(cohortsRef, {
+      name: cohortData.name,
+      year: cohortData.year,
+      createdAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating cohort:', error);
+    return null;
+  }
 };
 
 // ===================
@@ -570,18 +601,23 @@ export const subscribeToWallPosts = (callback) => {
 // CRITICAL: Anonymous wall posts have NO user identifier
 export const submitWallPost = async (postData) => {
   if (!db) return null;
-  const wallRef = collection(db, 'anonymous_wall');
-  
-  const anonymousPost = {
-    content: postData.content,
-    sentimentScore: postData.sentimentScore || 50,
-    tags: postData.tags || [],
-    createdAt: serverTimestamp()
-    // NO userId, NO email, NO identifying information
-  };
-  
-  const docRef = await addDoc(wallRef, anonymousPost);
-  return docRef.id;
+  try {
+    const wallRef = collection(db, 'anonymous_wall');
+    
+    const anonymousPost = {
+      content: postData.content,
+      sentimentScore: postData.sentimentScore || 50,
+      tags: postData.tags || [],
+      createdAt: serverTimestamp()
+      // NO userId, NO email, NO identifying information
+    };
+    
+    const docRef = await addDoc(wallRef, anonymousPost);
+    return docRef.id;
+  } catch (error) {
+    console.error('Error submitting wall post:', error);
+    return null;
+  }
 };
 
 // ===================
@@ -1154,29 +1190,21 @@ export const clearTestData = async () => {
 // SUMMARY CACHE
 // ===================
 
-// Save AI-generated summary to cache
+// Save AI-generated summary to cache (using fixed doc ID for atomic updates)
 export const saveSummaryCache = async (summary) => {
   if (!db) return null;
 
   try {
-    const cacheRef = collection(db, 'summary_cache');
-
-    // Delete existing cache (we only keep one latest summary)
-    const existingDocs = await getDocs(cacheRef);
-    const batch = writeBatch(db);
-    existingDocs.forEach(doc => {
-      batch.delete(doc.ref);
-    });
-    await batch.commit();
-
-    // Add new cache
-    const docRef = await addDoc(cacheRef, {
+    // Use a fixed document ID to avoid race conditions (atomic upsert)
+    const cacheDocRef = doc(db, 'summary_cache', 'latest');
+    
+    await setDoc(cacheDocRef, {
       ...summary,
       cachedAt: serverTimestamp(),
       responseCount: summary.responseCount || 0
     });
 
-    return docRef.id;
+    return 'latest';
   } catch (error) {
     console.error('Save summary cache error:', error);
     return null;
@@ -1308,8 +1336,8 @@ export const clearChatHistory = async (studentEmail) => {
     const snapshot = await getDocs(q);
 
     const batch = writeBatch(db);
-    snapshot.docs.forEach(doc => {
-      batch.delete(doc.ref);
+    snapshot.docs.forEach(docSnap => {
+      batch.delete(docSnap.ref);
     });
     await batch.commit();
     return true;
@@ -1328,8 +1356,8 @@ export const getStudentsWithChats = async () => {
 
     // Get unique student emails
     const emailsSet = new Set();
-    snapshot.docs.forEach(doc => {
-      const data = doc.data();
+    snapshot.docs.forEach(docSnap => {
+      const data = docSnap.data();
       if (data.studentEmail) {
         emailsSet.add(data.studentEmail);
       }
@@ -1429,31 +1457,23 @@ export const getChatAnalytics = async (filters = {}) => {
 // CHAT SUMMARY CACHE
 // ========================
 
-// Save AI-generated chat summary to cache for a specific student
+// Save AI-generated chat summary to cache for a specific student (using email-based doc ID for atomic updates)
 export const saveChatSummaryCache = async (studentEmail, summary) => {
   if (!db) return null;
 
   try {
-    const cacheRef = collection(db, 'chat_summary_cache');
-
-    // Delete existing cache for this student
-    const q = query(cacheRef, where('studentEmail', '==', studentEmail.toLowerCase()));
-    const existingDocs = await getDocs(q);
-    const batch = writeBatch(db);
-    existingDocs.forEach(doc => {
-      batch.delete(doc.ref);
-    });
-    await batch.commit();
-
-    // Add new cache
-    const docRef = await addDoc(cacheRef, {
+    // Use email as document ID (sanitized) for atomic upsert
+    const sanitizedEmail = studentEmail.toLowerCase().replace(/[^a-z0-9@._-]/g, '_');
+    const cacheDocRef = doc(db, 'chat_summary_cache', sanitizedEmail);
+    
+    await setDoc(cacheDocRef, {
       studentEmail: studentEmail.toLowerCase(),
       ...summary,
       cachedAt: serverTimestamp(),
       messageCount: summary.messageCount || 0
     });
 
-    return docRef.id;
+    return sanitizedEmail;
   } catch (error) {
     console.error('Save chat summary cache error:', error);
     return null;

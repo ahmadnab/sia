@@ -7,7 +7,7 @@ const PublicLanding = () => {
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-100 via-slate-50 to-slate-100 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
       {/* Navigation */}
-      <nav className="px-6 py-4 flex items-center justify-between max-w-6xl mx-auto">
+      <nav className="px-6 py-4 flex items-center justify-between max-w-6xl mx-auto" aria-label="Main navigation">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-sky-500 rounded-xl flex items-center justify-center">
             <Bot className="text-white" size={24} />
