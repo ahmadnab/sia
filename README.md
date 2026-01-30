@@ -17,10 +17,10 @@ An AI-driven educational technology platform designed to bridge the communicatio
 
 ## Tech Stack
 
-- **Frontend**: React 18 (Vite), Tailwind CSS
+- **Frontend**: React 19 (Vite), Tailwind CSS v4
 - **Database**: Firebase Firestore (real-time)
 - **Auth**: Firebase Anonymous Auth
-- **AI**: Google Gemini 1.5 Flash
+- **AI**: DeepSeek API (Chat & Reasoner models)
 - **Icons**: Lucide React
 - **Charts**: Recharts
 - **Animations**: Framer Motion
@@ -31,7 +31,7 @@ An AI-driven educational technology platform designed to bridge the communicatio
 ### Prerequisites
 - Node.js 18+
 - Firebase project with Firestore enabled
-- Google Gemini API key
+- DeepSeek API key (get from [platform.deepseek.com](https://platform.deepseek.com/api_keys))
 
 ### Installation
 
@@ -45,7 +45,7 @@ npm install
 cp .env.example .env
 ```
 
-3. Add your Firebase and Gemini credentials to `.env`:
+3. Add your Firebase and DeepSeek credentials to `.env`:
 ```env
 VITE_FIREBASE_API_KEY=your_firebase_api_key
 VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
@@ -53,7 +53,7 @@ VITE_FIREBASE_PROJECT_ID=your_project_id
 VITE_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 VITE_FIREBASE_APP_ID=your_app_id
-VITE_GEMINI_API_KEY=your_gemini_api_key
+VITE_DEEPSEEK_API_KEY=your_deepseek_api_key
 ```
 
 4. Start the development server:
@@ -81,7 +81,7 @@ The app expects these collections (created automatically):
 Click the floating button at the bottom-right to switch between Student and Admin views.
 
 ### Demo Mode
-If Firebase/Gemini credentials are not configured, the app runs in demo mode with limited functionality.
+If Firebase/DeepSeek credentials are not configured, the app runs in demo mode with limited functionality.
 
 ### Import Mock Data
 In Admin > Students, click "Import Mock Data" to populate 10 sample students.
