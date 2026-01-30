@@ -19,6 +19,7 @@ import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminRoster from './pages/admin/AdminRoster';
 import AdminSurveys from './pages/admin/AdminSurveys';
 import AdminCohorts from './pages/admin/AdminCohorts';
+import AdminAnonymousWall from './pages/admin/AdminAnonymousWall';
 
 // Student Portal Layout
 const StudentLayout = () => {
@@ -26,10 +27,10 @@ const StudentLayout = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-slate-900 dark:bg-slate-900 flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex items-center justify-center">
         <div className="text-center">
           <LoadingSpinner size="lg" light />
-          <p className="mt-4 text-slate-400 dark:text-slate-400">Loading Sia...</p>
+          <p className="mt-4 text-slate-600 dark:text-slate-400">Loading Sia...</p>
         </div>
       </div>
     );
@@ -38,7 +39,7 @@ const StudentLayout = () => {
   return (
     <>
       <DemoBanner />
-      <div className="min-h-screen bg-slate-900 dark:bg-slate-900 text-slate-100 dark:text-slate-100">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100">
         <Routes>
           <Route path="/" element={<StudentHome />} />
           <Route path="/chat" element={<StudentChat />} />
@@ -76,6 +77,7 @@ const AdminLayout = () => {
           <Route path="/roster" element={<AdminRoster />} />
           <Route path="/surveys" element={<AdminSurveys />} />
           <Route path="/cohorts" element={<AdminCohorts />} />
+          <Route path="/anonymous-wall" element={<AdminAnonymousWall />} />
           <Route path="*" element={<Navigate to="/admin" replace />} />
         </Routes>
       </div>

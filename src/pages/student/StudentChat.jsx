@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../../context/AppContext';
 import { chatWithSia } from '../../services/gemini';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import { renderMarkdown } from '../../utils/markdown';
 
 const StudentChat = () => {
   const { studentMilestone, configStatus } = useApp();
@@ -127,7 +128,13 @@ const StudentChat = () => {
                     ? 'bg-red-500/20 border border-red-500/50 text-slate-100'
                     : 'bg-slate-800 text-slate-100'
               }`}>
-                <p className="text-sm whitespace-pre-wrap">{message.content}</p>
+                <div className="text-sm">
+                  {message.role === 'user' ? (
+                    <p className="whitespace-pre-wrap">{message.content}</p>
+                  ) : (
+                    renderMarkdown(message.content)
+                  )}
+                </div>
               </div>
             </motion.div>
           ))}

@@ -1,8 +1,8 @@
 import { useState, useEffect, useMemo } from 'react';
-import { TrendingUp, TrendingDown, Users, MessageSquare, AlertTriangle, RefreshCw, Activity, Clock, PieChart as PieChartIcon, HelpCircle, X } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, MessageSquare, AlertTriangle, RefreshCw, Activity, Clock, PieChart as PieChartIcon, HelpCircle, X, Database, Trash2 } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar } from 'recharts';
 import AdminLayout from '../../components/AdminLayout';
-import { subscribeToResponses, subscribeToStudents, subscribeToSurveys, subscribeToSurveyStatus, getVoteCountsBySurvey } from '../../services/firebase';
+import { subscribeToResponses, subscribeToStudents, subscribeToSurveys, subscribeToSurveyStatus, getVoteCountsBySurvey, seedTestData, clearTestData, subscribeToSummaryCache, saveSummaryCache } from '../../services/firebase';
 import { generateResponseSummary } from '../../services/gemini';
 import { useApp } from '../../context/AppContext';
 import { useTheme } from '../../context/ThemeContext';
@@ -20,82 +20,160 @@ const AdminDashboard = () => {
   const [showResponseRateModal, setShowResponseRateModal] = useState(false);
   const [showRecentActivityModal, setShowRecentActivityModal] = useState(false);
   const [showRiskDistributionModal, setShowRiskDistributionModal] = useState(false);
+  const [showNeedsAttentionModal, setShowNeedsAttentionModal] = useState(false);
+  const [riskFilterLevel, setRiskFilterLevel] = useState('high'); // 'high', 'medium', 'low', 'unknown'
+  const [isSeeding, setIsSeeding] = useState(false);
+  const [isClearing, setIsClearing] = useState(false);
+  const [seedMessage, setSeedMessage] = useState(null);
+  const [clearMessage, setClearMessage] = useState(null);
 
   useEffect(() => {
     const unsubResponses = subscribeToResponses(setResponses);
     const unsubStudents = subscribeToStudents(setStudents);
     const unsubSurveys = subscribeToSurveys(setSurveys);
     const unsubStatuses = subscribeToSurveyStatus(setSurveyStatuses);
+    const unsubSummaryCache = subscribeToSummaryCache((cachedSummary) => {
+      if (cachedSummary) {
+        setSummary(cachedSummary);
+      }
+    });
     return () => {
       unsubResponses();
       unsubStudents();
       unsubSurveys();
       unsubStatuses();
+      unsubSummaryCache();
     };
   }, []);
 
-  // Generate summary when responses change
+  // Set default summary when no responses or no API key
   useEffect(() => {
-    let cancelled = false;
-    
-    const fetchSummary = async () => {
-      if (!configStatus.gemini || responses.length === 0) {
-        setSummary({
-          summary: responses.length === 0 
-            ? 'No responses yet. Create a survey to start collecting feedback.'
-            : 'Add Gemini API key to enable AI-powered summaries.',
-          themes: [],
-          actionItems: [],
-          averageSentiment: responses.length > 0 
-            ? Math.round(responses.reduce((a, r) => a + (r.sentimentScore || 50), 0) / responses.length)
-            : 0
-        });
-        return;
-      }
-
-      setIsLoadingSummary(true);
-      try {
-        const result = await generateResponseSummary(responses);
-        if (!cancelled) {
-          setSummary(result);
-        }
-      } catch (error) {
-        console.error('Summary error:', error);
-      }
-      if (!cancelled) {
-        setIsLoadingSummary(false);
-      }
-    };
-
-    fetchSummary();
-    
-    return () => { cancelled = true; };
-  }, [responses, configStatus.gemini]);
-
-  // Manual refresh handler for the button
-  const refreshSummary = async () => {
     if (!configStatus.gemini || responses.length === 0) {
-      setSummary({
-        summary: responses.length === 0 
+      const defaultSummary = {
+        summary: responses.length === 0
           ? 'No responses yet. Create a survey to start collecting feedback.'
           : 'Add Gemini API key to enable AI-powered summaries.',
         themes: [],
         actionItems: [],
-        averageSentiment: responses.length > 0 
+        averageSentiment: responses.length > 0
           ? Math.round(responses.reduce((a, r) => a + (r.sentimentScore || 50), 0) / responses.length)
           : 0
-      });
+      };
+      setSummary(defaultSummary);
+    }
+  }, [responses.length, configStatus.gemini]);
+
+  // Manual refresh handler for the button - generates new summary and caches it
+  const refreshSummary = async () => {
+    if (!configStatus.gemini || responses.length === 0) {
+      const defaultSummary = {
+        summary: responses.length === 0
+          ? 'No responses yet. Create a survey to start collecting feedback.'
+          : 'Add Gemini API key to enable AI-powered summaries.',
+        themes: [],
+        actionItems: [],
+        averageSentiment: responses.length > 0
+          ? Math.round(responses.reduce((a, r) => a + (r.sentimentScore || 50), 0) / responses.length)
+          : 0
+      };
+      setSummary(defaultSummary);
       return;
     }
 
     setIsLoadingSummary(true);
     try {
       const result = await generateResponseSummary(responses);
-      setSummary(result);
+
+      // Add response count to track freshness
+      const summaryWithMetadata = {
+        ...result,
+        responseCount: responses.length
+      };
+
+      setSummary(summaryWithMetadata);
+
+      // Save to cache in Firebase
+      if (configStatus.firebase) {
+        await saveSummaryCache(summaryWithMetadata);
+      }
     } catch (error) {
       console.error('Summary error:', error);
     }
     setIsLoadingSummary(false);
+  };
+
+  // Handle seed test data
+  const handleSeedTestData = async () => {
+    if (!configStatus.firebase) {
+      setSeedMessage({ type: 'error', text: 'Firebase not configured. Add your Firebase keys to .env first.' });
+      setTimeout(() => setSeedMessage(null), 5000);
+      return;
+    }
+
+    setIsSeeding(true);
+    setSeedMessage(null);
+
+    try {
+      const result = await seedTestData();
+      if (result.success) {
+        setSeedMessage({
+          type: 'success',
+          text: `✓ ${result.message} - ${result.details.cohorts} cohorts, ${result.details.students} students, ${result.details.surveys} surveys, ${result.details.responses} responses, ${result.details.wallPosts} wall posts`
+        });
+      } else {
+        setSeedMessage({ type: 'error', text: `✗ ${result.message}` });
+      }
+    } catch (error) {
+      console.error('Seed error:', error);
+      setSeedMessage({ type: 'error', text: `✗ Failed to seed data: ${error.message}` });
+    }
+
+    setIsSeeding(false);
+    setTimeout(() => setSeedMessage(null), 8000);
+  };
+
+  // Handle clear test data
+  const handleClearTestData = async () => {
+    if (!configStatus.firebase) {
+      setClearMessage({ type: 'error', text: 'Firebase not configured. Add your Firebase keys to .env first.' });
+      setTimeout(() => setClearMessage(null), 5000);
+      return;
+    }
+
+    const confirmed = window.confirm(
+      '⚠️ WARNING: This will permanently delete ALL data from Firebase!\n\n' +
+      'This includes:\n' +
+      '• All students\n' +
+      '• All cohorts\n' +
+      '• All surveys\n' +
+      '• All responses\n' +
+      '• All wall posts\n' +
+      '• All vote tracking\n\n' +
+      'Are you absolutely sure you want to proceed?'
+    );
+
+    if (!confirmed) return;
+
+    setIsClearing(true);
+    setClearMessage(null);
+
+    try {
+      const result = await clearTestData();
+      if (result.success) {
+        setClearMessage({
+          type: 'success',
+          text: `✓ ${result.message}`
+        });
+      } else {
+        setClearMessage({ type: 'error', text: `✗ ${result.message}` });
+      }
+    } catch (error) {
+      console.error('Clear error:', error);
+      setClearMessage({ type: 'error', text: `✗ Failed to clear data: ${error.message}` });
+    }
+
+    setIsClearing(false);
+    setTimeout(() => setClearMessage(null), 5000);
   };
 
   // ==================
@@ -320,14 +398,19 @@ const AdminDashboard = () => {
           </div>
 
           {/* At-Risk Students */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+          <button
+            onClick={() => setShowNeedsAttentionModal(true)}
+            className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow text-left w-full focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
+            type="button"
+            aria-label="View at-risk students"
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Needs Attention</h3>
               <AlertTriangle className="text-amber-500" size={20} />
             </div>
             <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{atRiskStudents}</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Students at risk</p>
-          </div>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Students at risk • Click to view</p>
+          </button>
         </div>
 
         {/* Secondary Metric Cards - Engagement & Risk */}
@@ -513,22 +596,51 @@ const AdminDashboard = () => {
           {/* AI Summary */}
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">AI Summary</h3>
-              <button 
+              <div className="flex items-center gap-2">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">AI Summary</h3>
+                {summary?.responseCount > 0 && summary.responseCount !== responses.length && (
+                  <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
+                    Update Available
+                  </span>
+                )}
+              </div>
+              <button
                 onClick={refreshSummary}
-                disabled={isLoadingSummary}
+                disabled={isLoadingSummary || !configStatus.gemini || responses.length === 0}
                 className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                title={
+                  !configStatus.gemini
+                    ? 'Add Gemini API key to enable AI summaries'
+                    : responses.length === 0
+                      ? 'No responses to summarize'
+                      : summary?.responseCount > 0 && summary.responseCount !== responses.length
+                        ? 'Click to generate updated summary'
+                        : 'Click to refresh summary'
+                }
               >
                 <RefreshCw size={16} className={`text-slate-500 dark:text-slate-400 ${isLoadingSummary ? 'animate-spin' : ''}`} />
               </button>
             </div>
             
             {isLoadingSummary ? (
-              <div className="flex items-center justify-center h-48">
+              <div className="flex flex-col items-center justify-center h-48 gap-3">
                 <LoadingSpinner />
+                <p className="text-sm text-slate-500 dark:text-slate-400">Generating AI summary...</p>
               </div>
             ) : summary ? (
               <div className="space-y-4">
+                {summary.cachedAt && (
+                  <div className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                    <span>
+                      Cached {new Date(summary.cachedAt?.seconds * 1000 || Date.now()).toLocaleString()}
+                    </span>
+                    {summary.responseCount > 0 && summary.responseCount !== responses.length && (
+                      <span className="text-amber-600 dark:text-amber-500">
+                        • {responses.length - summary.responseCount} new response(s)
+                      </span>
+                    )}
+                  </div>
+                )}
                 <p className="text-sm text-slate-600 dark:text-slate-300">{summary.summary}</p>
                 
                 {summary.themes?.length > 0 && (
@@ -564,34 +676,6 @@ const AdminDashboard = () => {
           </div>
         </div>
 
-        {/* Needs Attention List */}
-        {atRiskStudents > 0 && (
-          <div className="mt-6 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-            <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">Students Needing Attention</h3>
-            <div className="space-y-3">
-              {students.filter(s => s.riskLevel === 'high').map(student => (
-                <div key={student.id} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center">
-                      <span className="text-red-600 dark:text-red-400 font-medium">
-                        {student.name?.charAt(0) || '?'}
-                      </span>
-                    </div>
-                    <div>
-                      <p className="font-medium text-slate-900 dark:text-slate-100">{student.name}</p>
-                      <p className="text-sm text-slate-500 dark:text-slate-400">
-                        {student.milestone} • GPA: {student.gpa !== null ? student.gpa?.toFixed(1) : 'N/A'}
-                      </p>
-                    </div>
-                  </div>
-                  <span className="px-2 py-1 bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 text-xs font-medium rounded-full">
-                    High Risk
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
 
         {/* Response Rate Detail Modal */}
         {showResponseRateModal && (
@@ -694,7 +778,14 @@ const AdminDashboard = () => {
               </div>
               <div className="p-6">
                 <div className="grid grid-cols-2 gap-4 mb-6">
-                  <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg p-4">
+                  <button
+                    onClick={() => setRiskFilterLevel('high')}
+                    className={`text-left rounded-lg p-4 transition-all ${
+                      riskFilterLevel === 'high'
+                        ? 'bg-red-50 dark:bg-red-900/20 border-2 border-red-500 dark:border-red-600 shadow-md'
+                        : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 hover:border-red-300 dark:hover:border-red-700'
+                    }`}
+                  >
                     <div className="flex items-center gap-2 mb-2">
                       <span className="w-3 h-3 rounded-full bg-red-500"></span>
                       <h3 className="font-semibold text-red-900 dark:text-red-300">High Risk</h3>
@@ -703,8 +794,15 @@ const AdminDashboard = () => {
                     <p className="text-sm text-red-700 dark:text-red-300">
                       {riskMetrics.totalStudents > 0 ? Math.round((riskMetrics.highRiskCount / riskMetrics.totalStudents) * 100) : 0}% of total
                     </p>
-                  </div>
-                  <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/30 rounded-lg p-4">
+                  </button>
+                  <button
+                    onClick={() => setRiskFilterLevel('medium')}
+                    className={`text-left rounded-lg p-4 transition-all ${
+                      riskFilterLevel === 'medium'
+                        ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500 dark:border-amber-600 shadow-md'
+                        : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/30 hover:border-amber-300 dark:hover:border-amber-700'
+                    }`}
+                  >
                     <div className="flex items-center gap-2 mb-2">
                       <span className="w-3 h-3 rounded-full bg-amber-500"></span>
                       <h3 className="font-semibold text-amber-900 dark:text-amber-300">Medium Risk</h3>
@@ -713,8 +811,15 @@ const AdminDashboard = () => {
                     <p className="text-sm text-amber-700 dark:text-amber-300">
                       {riskMetrics.totalStudents > 0 ? Math.round((riskMetrics.mediumRiskCount / riskMetrics.totalStudents) * 100) : 0}% of total
                     </p>
-                  </div>
-                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 rounded-lg p-4">
+                  </button>
+                  <button
+                    onClick={() => setRiskFilterLevel('low')}
+                    className={`text-left rounded-lg p-4 transition-all ${
+                      riskFilterLevel === 'low'
+                        ? 'bg-green-50 dark:bg-green-900/20 border-2 border-green-500 dark:border-green-600 shadow-md'
+                        : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 hover:border-green-300 dark:hover:border-green-700'
+                    }`}
+                  >
                     <div className="flex items-center gap-2 mb-2">
                       <span className="w-3 h-3 rounded-full bg-green-500"></span>
                       <h3 className="font-semibold text-green-900 dark:text-green-300">Low Risk</h3>
@@ -723,9 +828,16 @@ const AdminDashboard = () => {
                     <p className="text-sm text-green-700 dark:text-green-300">
                       {riskMetrics.totalStudents > 0 ? Math.round((riskMetrics.lowRiskCount / riskMetrics.totalStudents) * 100) : 0}% of total
                     </p>
-                  </div>
+                  </button>
                   {riskMetrics.unknownRiskCount > 0 && (
-                    <div className="bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 rounded-lg p-4">
+                    <button
+                      onClick={() => setRiskFilterLevel('unknown')}
+                      className={`text-left rounded-lg p-4 transition-all ${
+                        riskFilterLevel === 'unknown'
+                          ? 'bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-500 dark:border-slate-500 shadow-md'
+                          : 'bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
+                      }`}
+                    >
                       <div className="flex items-center gap-2 mb-2">
                         <HelpCircle size={16} className="text-slate-400 dark:text-slate-500" />
                         <h3 className="font-semibold text-slate-900 dark:text-slate-100">Unknown</h3>
@@ -734,32 +846,46 @@ const AdminDashboard = () => {
                       <p className="text-sm text-slate-700 dark:text-slate-400">
                         {riskMetrics.totalStudents > 0 ? Math.round((riskMetrics.unknownRiskCount / riskMetrics.totalStudents) * 100) : 0}% of total
                       </p>
-                    </div>
+                    </button>
                   )}
                 </div>
                 <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
-                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">High Risk Students</h3>
-                  {riskMetrics.highRiskCount === 0 ? (
-                    <p className="text-slate-500 dark:text-slate-400 text-sm">No high-risk students at this time.</p>
+                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">
+                    {riskFilterLevel === 'high' && 'High Risk Students'}
+                    {riskFilterLevel === 'medium' && 'Medium Risk Students'}
+                    {riskFilterLevel === 'low' && 'Low Risk Students'}
+                    {riskFilterLevel === 'unknown' && 'Students with Unknown Risk'}
+                  </h3>
+                  {students.filter(s => s.riskLevel === riskFilterLevel || (!s.riskLevel && riskFilterLevel === 'unknown')).length === 0 ? (
+                    <p className="text-slate-500 dark:text-slate-400 text-sm">No students in this category.</p>
                   ) : (
                     <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {students.filter(s => s.riskLevel === 'high').map(student => (
-                        <div key={student.id} className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-900/30 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center">
-                              <span className="text-red-600 dark:text-red-400 font-medium text-sm">
-                                {student.name?.charAt(0) || '?'}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-medium text-slate-900 dark:text-slate-100 text-sm">{student.name}</p>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">
-                                {student.milestone} • GPA: {student.gpa !== null ? student.gpa?.toFixed(1) : 'N/A'}
-                              </p>
+                      {students.filter(s => s.riskLevel === riskFilterLevel || (!s.riskLevel && riskFilterLevel === 'unknown')).map(student => {
+                        const getRiskColor = (level) => {
+                          if (level === 'high') return { bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-100 dark:border-red-900/30', text: 'text-red-600 dark:text-red-400', initBg: 'bg-red-100 dark:bg-red-900/40' };
+                          if (level === 'medium') return { bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-100 dark:border-amber-900/30', text: 'text-amber-600 dark:text-amber-400', initBg: 'bg-amber-100 dark:bg-amber-900/40' };
+                          if (level === 'low') return { bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-100 dark:border-green-900/30', text: 'text-green-600 dark:text-green-400', initBg: 'bg-green-100 dark:bg-green-900/40' };
+                          return { bg: 'bg-slate-50 dark:bg-slate-700/50', border: 'border-slate-100 dark:border-slate-600', text: 'text-slate-600 dark:text-slate-300', initBg: 'bg-slate-100 dark:bg-slate-600' };
+                        };
+                        const colors = getRiskColor(riskFilterLevel);
+                        return (
+                          <div key={student.id} className={`flex items-center justify-between p-3 ${colors.bg} border ${colors.border} rounded-lg`}>
+                            <div className="flex items-center gap-3">
+                              <div className={`w-8 h-8 ${colors.initBg} rounded-full flex items-center justify-center`}>
+                                <span className={`${colors.text} font-medium text-sm`}>
+                                  {student.name?.charAt(0) || '?'}
+                                </span>
+                              </div>
+                              <div>
+                                <p className="font-medium text-slate-900 dark:text-slate-100 text-sm">{student.name}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  {student.milestone} • GPA: {student.gpa !== null ? student.gpa?.toFixed(1) : 'N/A'}
+                                </p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>
@@ -767,6 +893,150 @@ const AdminDashboard = () => {
             </div>
           </div>
         )}
+
+        {/* Needs Attention Modal */}
+        {showNeedsAttentionModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowNeedsAttentionModal(false)}>
+            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="text-red-500" size={24} />
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Students Needing Attention</h2>
+                </div>
+                <button onClick={() => setShowNeedsAttentionModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                  <X size={20} className="text-slate-500 dark:text-slate-400" />
+                </button>
+              </div>
+              <div className="p-6">
+                <div className="mb-4">
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
+                    The following students have been identified as high-risk based on their GPA and performance metrics.
+                    Consider reaching out for additional support.
+                  </p>
+                </div>
+                {riskMetrics.highRiskCount === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Users className="text-green-600 dark:text-green-400" size={32} />
+                    </div>
+                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">All Students On Track</h3>
+                    <p className="text-sm text-slate-500 dark:text-slate-400">No high-risk students at this time.</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                    {students.filter(s => s.riskLevel === 'high').map(student => (
+                      <div key={student.id} className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg hover:shadow-md transition-shadow">
+                        <div className="flex items-center gap-3">
+                          <div className="w-12 h-12 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center">
+                            <span className="text-red-600 dark:text-red-400 font-bold text-lg">
+                              {student.name?.charAt(0) || '?'}
+                            </span>
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-900 dark:text-slate-100">{student.name}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">
+                              {student.milestone} • GPA: {student.gpa !== null ? student.gpa?.toFixed(1) : 'N/A'}
+                            </p>
+                            {student.email && (
+                              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{student.email}</p>
+                            )}
+                          </div>
+                        </div>
+                        <span className="px-3 py-1.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 text-sm font-medium rounded-full">
+                          High Risk
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Test Data Management Section */}
+        <div className="mt-8 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-xl border-2 border-amber-200 dark:border-amber-900/30 p-6 shadow-sm">
+          <div className="flex items-start gap-4 mb-4">
+            <div className="flex-shrink-0 w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
+              <Database className="text-amber-600 dark:text-amber-400" size={24} />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-300 mb-1">Demo Data Management</h3>
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                Use these tools to populate or clear your database for demonstration purposes.
+                <span className="font-medium"> Seed creates 3 cohorts, 30 students, 5 surveys, 60 responses, and 20 wall posts.</span>
+              </p>
+            </div>
+          </div>
+
+          {/* Status Messages */}
+          {seedMessage && (
+            <div className={`mb-4 p-3 rounded-lg border ${
+              seedMessage.type === 'success'
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300'
+                : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
+            }`}>
+              <p className="text-sm font-medium">{seedMessage.text}</p>
+            </div>
+          )}
+
+          {clearMessage && (
+            <div className={`mb-4 p-3 rounded-lg border ${
+              clearMessage.type === 'success'
+                ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300'
+                : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
+            }`}>
+              <p className="text-sm font-medium">{clearMessage.text}</p>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={handleSeedTestData}
+              disabled={isSeeding || isClearing}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-medium rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSeeding ? (
+                <>
+                  <LoadingSpinner size="sm" light />
+                  <span>Seeding Data...</span>
+                </>
+              ) : (
+                <>
+                  <Database size={18} />
+                  <span>Seed Test Data</span>
+                </>
+              )}
+            </button>
+
+            <button
+              onClick={handleClearTestData}
+              disabled={isSeeding || isClearing}
+              className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-medium rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isClearing ? (
+                <>
+                  <LoadingSpinner size="sm" light />
+                  <span>Clearing Data...</span>
+                </>
+              ) : (
+                <>
+                  <Trash2 size={18} />
+                  <span>Clear All Data</span>
+                </>
+              )}
+            </button>
+          </div>
+
+          {/* Warning Notice */}
+          <div className="mt-4 p-3 bg-amber-100 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-900/40 rounded-lg">
+            <p className="text-xs text-amber-800 dark:text-amber-300">
+              <span className="font-semibold">⚠️ Important:</span> Clear All Data will permanently delete all records from Firebase.
+              This action cannot be undone. Always backup important data before clearing.
+            </p>
+          </div>
+        </div>
       </div>
     </AdminLayout>
   );

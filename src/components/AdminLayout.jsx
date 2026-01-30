@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Users, ClipboardList, Bot, FolderKanban } from 'lucide-react';
+import { LayoutDashboard, Users, ClipboardList, Bot, FolderKanban, MessageSquare } from 'lucide-react';
 import ThemeToggle from './ThemeToggle';
 
 const AdminLayout = ({ children }) => {
@@ -8,12 +8,13 @@ const AdminLayout = ({ children }) => {
     { to: '/admin/cohorts', icon: FolderKanban, label: 'Cohorts' },
     { to: '/admin/roster', icon: Users, label: 'Students' },
     { to: '/admin/surveys', icon: ClipboardList, label: 'Surveys' },
+    { to: '/admin/anonymous-wall', icon: MessageSquare, label: 'Anonymous Wall' },
   ];
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex">
       {/* Sidebar */}
-      <aside className="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col">
+      <aside className="w-64 bg-white dark:bg-slate-800 border-r border-slate-200 dark:border-slate-700 flex flex-col sticky top-0 h-screen">
         {/* Logo */}
         <div className="p-6 border-b border-slate-200 dark:border-slate-700">
           <div className="flex items-center gap-3">

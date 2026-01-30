@@ -346,10 +346,10 @@ const AdminCohorts = () => {
 
         {/* Cohorts Grid */}
         {cohorts.length === 0 ? (
-          <div className="bg-white rounded-xl border border-slate-200 p-12 text-center shadow-sm">
-            <Users className="mx-auto text-slate-300 mb-4" size={48} />
-            <h3 className="text-lg font-medium text-slate-900">No cohorts yet</h3>
-            <p className="text-slate-500 mt-1">Create your first cohort to get started.</p>
+          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-12 text-center shadow-sm">
+            <Users className="mx-auto text-slate-300 dark:text-slate-600 mb-4" size={48} />
+            <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">No cohorts yet</h3>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">Create your first cohort to get started.</p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -357,8 +357,8 @@ const AdminCohorts = () => {
                 <div key={cohort.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
                 <div className="flex items-start justify-between mb-4">
                   <div>
-                    <h3 className="text-lg font-semibold text-slate-900">{cohort.name}</h3>
-                    <div className="flex items-center gap-1 text-sm text-slate-500 mt-1">
+                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{cohort.name}</h3>
+                    <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 mt-1">
                       <Calendar size={14} />
                       <span>{cohort.year}</span>
                     </div>
@@ -434,7 +434,7 @@ const AdminCohorts = () => {
                   <button
                     onClick={() => handleImportMockData(cohort.id)}
                     disabled={isImporting[cohort.id]}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors text-sm disabled:opacity-50"
+                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition-colors text-sm disabled:opacity-50"
                   >
                     <Upload size={16} />
                     Import Mock Data
@@ -460,14 +460,14 @@ const AdminCohorts = () => {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-2xl shadow-xl w-full max-w-md"
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md"
               >
                 {/* Modal Header */}
-                <div className="flex items-center justify-between p-6 border-b border-slate-200">
-                  <h2 className="text-xl font-bold text-slate-900">Create New Cohort</h2>
+                <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Create New Cohort</h2>
                   <button
                     onClick={() => setIsModalOpen(false)}
-                    className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                   >
                     <X size={20} className="text-slate-500" />
                   </button>
@@ -476,7 +476,7 @@ const AdminCohorts = () => {
                 {/* Modal Body */}
                 <div className="p-6 space-y-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                       Cohort Name
                     </label>
                     <input
@@ -484,18 +484,18 @@ const AdminCohorts = () => {
                       value={newCohort.name}
                       onChange={(e) => setNewCohort(prev => ({ ...prev, name: e.target.value }))}
                       placeholder="e.g., Computer Science 2024"
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500"
+                      className="w-full px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-2">
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                       Year
                     </label>
                     <select
                       value={newCohort.year}
                       onChange={(e) => setNewCohort(prev => ({ ...prev, year: e.target.value }))}
-                      className="w-full px-4 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white"
+                      className="w-full px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                     >
                       {years.map(year => (
                         <option key={year} value={year}>{year}</option>
@@ -505,10 +505,10 @@ const AdminCohorts = () => {
                 </div>
 
                 {/* Modal Footer */}
-                <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 bg-slate-50 rounded-b-2xl">
+                <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-b-2xl">
                   <button
                     onClick={() => setIsModalOpen(false)}
-                    className="px-4 py-2 text-slate-600 hover:bg-slate-200 rounded-lg transition-colors"
+                    className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
                   >
                     Cancel
                   </button>

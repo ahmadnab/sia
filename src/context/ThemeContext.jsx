@@ -58,7 +58,7 @@ export const ThemeProvider = ({ children }) => {
   // Apply theme class to html element
   useEffect(() => {
     if (typeof document === 'undefined') return;
-    
+
     const root = document.documentElement;
     if (resolvedTheme === 'dark') {
       root.classList.add('dark');

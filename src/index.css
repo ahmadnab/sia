@@ -5,6 +5,8 @@
 
 /* Design System: Sia "Slate & Sky" Theme */
 
+@variant dark (&:where(.dark, .dark *));
+
 @theme {
   /* Primary Colors (Brand) */
   --color-primary-500: #0EA5E9;

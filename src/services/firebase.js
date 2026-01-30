@@ -521,5 +521,494 @@ export const submitWallPost = async (postData) => {
   return docRef.id;
 };
 
+// ===================
+// TEST DATA SEEDING & CLEARING
+// ===================
+
+// Seed comprehensive test data for demo purposes
+export const seedTestData = async () => {
+  if (!db) return { success: false, message: 'Database not configured' };
+
+  try {
+    const batch = writeBatch(db);
+    const results = {
+      cohorts: [],
+      students: [],
+      surveys: [],
+      responses: [],
+      wallPosts: []
+    };
+
+    // ============================================
+    // 1. CREATE COHORTS
+    // ============================================
+    const cohortData = [
+      { name: 'Computer Science 2024', year: '2024' },
+      { name: 'Software Engineering 2023', year: '2023' },
+      { name: 'Data Science 2025', year: '2025' }
+    ];
+
+    const cohortRefs = [];
+    const cohortsRef = collection(db, 'cohorts');
+
+    for (const cohort of cohortData) {
+      const cohortDocRef = doc(cohortsRef);
+      batch.set(cohortDocRef, {
+        ...cohort,
+        createdAt: serverTimestamp()
+      });
+      cohortRefs.push({ id: cohortDocRef.id, ...cohort });
+    }
+
+    // Commit cohorts first to get IDs
+    await batch.commit();
+    results.cohorts = cohortRefs.map(c => c.id);
+
+    // ============================================
+    // 2. CREATE STUDENTS (30 students across cohorts)
+    // ============================================
+    const studentsBatch = writeBatch(db);
+    const studentsData = [
+      // CS 2024 - 12 students
+      { firstName: 'Alice', lastName: 'Chen', email: 'alice.chen@uni.edu', gpa: 3.8, milestoneTag: 'Sem 4', riskLevel: 'low', portfolioLink: 'https://alice-chen.dev', cohortIndex: 0 },
+      { firstName: 'Bob', lastName: 'Martinez', email: 'bob.martinez@uni.edu', gpa: 2.3, milestoneTag: 'Sem 3', riskLevel: 'high', portfolioLink: 'https://bob-martinez.dev', cohortIndex: 0 },
+      { firstName: 'Carol', lastName: 'Williams', email: 'carol.williams@uni.edu', gpa: 3.5, milestoneTag: 'Sem 4', riskLevel: 'low', portfolioLink: 'https://carol-williams.dev', cohortIndex: 0 },
+      { firstName: 'David', lastName: 'Kumar', email: 'david.kumar@uni.edu', gpa: 2.9, milestoneTag: 'Sem 3', riskLevel: 'medium', portfolioLink: 'https://david-kumar.dev', cohortIndex: 0 },
+      { firstName: 'Emma', lastName: 'Rodriguez', email: 'emma.rodriguez@uni.edu', gpa: 3.9, milestoneTag: 'Sem 4', riskLevel: 'low', portfolioLink: 'https://emma-rodriguez.dev', cohortIndex: 0 },
+      { firstName: 'Frank', lastName: 'O\'Brien', email: 'frank.obrien@uni.edu', gpa: 2.1, milestoneTag: 'Sem 2', riskLevel: 'high', portfolioLink: 'https://frank-obrien.dev', cohortIndex: 0 },
+      { firstName: 'Grace', lastName: 'Park', email: 'grace.park@uni.edu', gpa: 3.6, milestoneTag: 'Sem 4', riskLevel: 'low', portfolioLink: 'https://grace-park.dev', cohortIndex: 0 },
+      { firstName: 'Henry', lastName: 'Thompson', email: 'henry.thompson@uni.edu', gpa: 2.5, milestoneTag: 'Sem 3', riskLevel: 'medium', portfolioLink: 'https://henry-thompson.dev', cohortIndex: 0 },
+      { firstName: 'Ivy', lastName: 'Zhang', email: 'ivy.zhang@uni.edu', gpa: 3.7, milestoneTag: 'Sem 4', riskLevel: 'low', portfolioLink: 'https://ivy-zhang.dev', cohortIndex: 0 },
+      { firstName: 'Jack', lastName: 'Foster', email: 'jack.foster@uni.edu', gpa: 1.9, milestoneTag: 'Sem 2', riskLevel: 'high', portfolioLink: 'https://jack-foster.dev', cohortIndex: 0 },
+      { firstName: 'Kate', lastName: 'Anderson', email: 'kate.anderson@uni.edu', gpa: 3.4, milestoneTag: 'Sem 3', riskLevel: 'low', portfolioLink: 'https://kate-anderson.dev', cohortIndex: 0 },
+      { firstName: 'Leo', lastName: 'Santos', email: 'leo.santos@uni.edu', gpa: 2.7, milestoneTag: 'Sem 3', riskLevel: 'medium', portfolioLink: 'https://leo-santos.dev', cohortIndex: 0 },
+
+      // SE 2023 - 10 students
+      { firstName: 'Maya', lastName: 'Patel', email: 'maya.patel@uni.edu', gpa: 3.9, milestoneTag: 'Final Year', riskLevel: 'low', portfolioLink: 'https://maya-patel.dev', cohortIndex: 1 },
+      { firstName: 'Noah', lastName: 'Kim', email: 'noah.kim@uni.edu', gpa: 3.2, milestoneTag: 'Final Year', riskLevel: 'low', portfolioLink: 'https://noah-kim.dev', cohortIndex: 1 },
+      { firstName: 'Olivia', lastName: 'Johnson', email: 'olivia.johnson@uni.edu', gpa: 2.8, milestoneTag: 'Sem 4', riskLevel: 'medium', portfolioLink: 'https://olivia-johnson.dev', cohortIndex: 1 },
+      { firstName: 'Peter', lastName: 'Lee', email: 'peter.lee@uni.edu', gpa: 3.6, milestoneTag: 'Final Year', riskLevel: 'low', portfolioLink: 'https://peter-lee.dev', cohortIndex: 1 },
+      { firstName: 'Quinn', lastName: 'Taylor', email: 'quinn.taylor@uni.edu', gpa: 2.4, milestoneTag: 'Sem 4', riskLevel: 'high', portfolioLink: 'https://quinn-taylor.dev', cohortIndex: 1 },
+      { firstName: 'Ruby', lastName: 'Nguyen', email: 'ruby.nguyen@uni.edu', gpa: 3.8, milestoneTag: 'Final Year', riskLevel: 'low', portfolioLink: 'https://ruby-nguyen.dev', cohortIndex: 1 },
+      { firstName: 'Sam', lastName: 'Davis', email: 'sam.davis@uni.edu', gpa: 3.1, milestoneTag: 'Sem 4', riskLevel: 'low', portfolioLink: 'https://sam-davis.dev', cohortIndex: 1 },
+      { firstName: 'Tara', lastName: 'Wilson', email: 'tara.wilson@uni.edu', gpa: 2.6, milestoneTag: 'Sem 4', riskLevel: 'medium', portfolioLink: 'https://tara-wilson.dev', cohortIndex: 1 },
+      { firstName: 'Uma', lastName: 'Singh', email: 'uma.singh@uni.edu', gpa: 3.7, milestoneTag: 'Final Year', riskLevel: 'low', portfolioLink: 'https://uma-singh.dev', cohortIndex: 1 },
+      { firstName: 'Victor', lastName: 'Brown', email: 'victor.brown@uni.edu', gpa: 2.2, milestoneTag: 'Sem 3', riskLevel: 'high', portfolioLink: 'https://victor-brown.dev', cohortIndex: 1 },
+
+      // DS 2025 - 8 students
+      { firstName: 'Wendy', lastName: 'Moore', email: 'wendy.moore@uni.edu', gpa: 3.5, milestoneTag: 'Sem 2', riskLevel: 'low', portfolioLink: 'https://wendy-moore.dev', cohortIndex: 2 },
+      { firstName: 'Xavier', lastName: 'Garcia', email: 'xavier.garcia@uni.edu', gpa: 2.9, milestoneTag: 'Sem 2', riskLevel: 'medium', portfolioLink: 'https://xavier-garcia.dev', cohortIndex: 2 },
+      { firstName: 'Yara', lastName: 'Ali', email: 'yara.ali@uni.edu', gpa: 3.8, milestoneTag: 'Sem 2', riskLevel: 'low', portfolioLink: 'https://yara-ali.dev', cohortIndex: 2 },
+      { firstName: 'Zack', lastName: 'Miller', email: 'zack.miller@uni.edu', gpa: 2.0, milestoneTag: 'Sem 1', riskLevel: 'high', portfolioLink: 'https://zack-miller.dev', cohortIndex: 2 },
+      { firstName: 'Aria', lastName: 'White', email: 'aria.white@uni.edu', gpa: 3.3, milestoneTag: 'Sem 2', riskLevel: 'low', portfolioLink: 'https://aria-white.dev', cohortIndex: 2 },
+      { firstName: 'Ben', lastName: 'Harris', email: 'ben.harris@uni.edu', gpa: 2.7, milestoneTag: 'Sem 1', riskLevel: 'medium', portfolioLink: 'https://ben-harris.dev', cohortIndex: 2 },
+      { firstName: 'Chloe', lastName: 'Clark', email: 'chloe.clark@uni.edu', gpa: 3.6, milestoneTag: 'Sem 2', riskLevel: 'low', portfolioLink: 'https://chloe-clark.dev', cohortIndex: 2 },
+      { firstName: 'Dan', lastName: 'Lewis', email: 'dan.lewis@uni.edu', gpa: 2.4, milestoneTag: 'Sem 1', riskLevel: 'high', portfolioLink: 'https://dan-lewis.dev', cohortIndex: 2 }
+    ];
+
+    const studentsRef = collection(db, 'students');
+    const studentDocRefs = [];
+
+    studentsData.forEach((student) => {
+      const studentDocRef = doc(studentsRef);
+      const cohortId = cohortRefs[student.cohortIndex].id;
+      studentsBatch.set(studentDocRef, {
+        firstName: student.firstName,
+        lastName: student.lastName,
+        name: `${student.firstName} ${student.lastName}`,
+        email: student.email,
+        gpa: student.gpa,
+        portfolioLink: student.portfolioLink,
+        milestoneTag: student.milestoneTag,
+        milestone: student.milestoneTag,
+        riskLevel: student.riskLevel,
+        cohortId: cohortId,
+        createdAt: serverTimestamp()
+      });
+      studentDocRefs.push(studentDocRef.id);
+    });
+
+    await studentsBatch.commit();
+    results.students = studentDocRefs;
+
+    // ============================================
+    // 3. CREATE SURVEYS (5 surveys)
+    // ============================================
+    const surveysBatch = writeBatch(db);
+    const surveysData = [
+      {
+        title: 'Mid-Semester Wellness Check',
+        cohortId: cohortRefs[0].id, // CS 2024
+        status: 'Active',
+        questions: [
+          { type: 'scale', text: 'How would you rate your overall wellbeing this semester?' },
+          { type: 'text', text: 'What has been your biggest challenge so far?' },
+          { type: 'scale', text: 'How manageable is your current workload?' },
+          { type: 'text', text: 'What support would help you succeed?' }
+        ]
+      },
+      {
+        title: 'Course Content & Teaching Quality',
+        cohortId: cohortRefs[0].id, // CS 2024
+        status: 'Active',
+        questions: [
+          { type: 'scale', text: 'How clear and understandable are the lecture materials?' },
+          { type: 'text', text: 'Which topics do you find most confusing?' },
+          { type: 'scale', text: 'How helpful are the lab sessions?' },
+          { type: 'text', text: 'What improvements would you suggest for the course?' }
+        ]
+      },
+      {
+        title: 'Career Readiness Survey',
+        cohortId: cohortRefs[1].id, // SE 2023
+        status: 'Active',
+        questions: [
+          { type: 'scale', text: 'How confident do you feel about your job prospects?' },
+          { type: 'text', text: 'What skills do you feel you need to develop before graduating?' },
+          { type: 'scale', text: 'How useful have the career services been?' },
+          { type: 'text', text: 'What additional career support would be helpful?' }
+        ]
+      },
+      {
+        title: 'Mental Health & Support Services',
+        cohortId: null, // All students
+        status: 'Active',
+        questions: [
+          { type: 'scale', text: 'How would you rate your stress levels this semester?' },
+          { type: 'text', text: 'What causes you the most stress or anxiety?' },
+          { type: 'scale', text: 'How aware are you of available support services?' },
+          { type: 'text', text: 'What would make it easier for you to seek help when needed?' }
+        ]
+      },
+      {
+        title: 'First Year Experience',
+        cohortId: cohortRefs[2].id, // DS 2025
+        status: 'Active',
+        questions: [
+          { type: 'scale', text: 'How well are you adjusting to university life?' },
+          { type: 'text', text: 'What has surprised you most about university?' },
+          { type: 'scale', text: 'How supported do you feel by faculty and staff?' },
+          { type: 'text', text: 'What advice would you give to future first-year students?' }
+        ]
+      }
+    ];
+
+    const surveysRef = collection(db, 'surveys');
+    const surveyDocRefs = [];
+
+    for (const survey of surveysData) {
+      const surveyDocRef = doc(surveysRef);
+      surveysBatch.set(surveyDocRef, {
+        ...survey,
+        createdAt: serverTimestamp(),
+        publishedAt: serverTimestamp(),
+        notificationsSentAt: serverTimestamp()
+      });
+      surveyDocRefs.push({ id: surveyDocRef.id, cohortId: survey.cohortId });
+    }
+
+    await surveysBatch.commit();
+    results.surveys = surveyDocRefs.map(s => s.id);
+
+    // ============================================
+    // 4. CREATE SURVEY RESPONSES (60 responses)
+    // ============================================
+    const responsesBatch = writeBatch(db);
+
+    // Helper to generate realistic responses
+    const generateResponses = (surveyId, responseCount) => {
+      const responses = [];
+
+      // Distribute sentiment: 40% positive, 35% neutral, 25% negative
+      const sentimentDistribution = [
+        ...Array(Math.floor(responseCount * 0.4)).fill('positive'),
+        ...Array(Math.floor(responseCount * 0.35)).fill('neutral'),
+        ...Array(Math.floor(responseCount * 0.25)).fill('negative')
+      ];
+
+      const positiveTexts = [
+        "I'm really enjoying this semester. The pace is good and I feel supported.",
+        "The teaching quality has been excellent. I'm learning a lot and feeling confident.",
+        "Great experience so far. The balance between theory and practice is perfect.",
+        "I appreciate all the resources available. Feeling well-prepared for my future career.",
+        "The workload is challenging but manageable. I'm developing strong skills.",
+        "Very satisfied with the support from professors and TAs. Makes a huge difference.",
+        "The course content is relevant and engaging. I can see how it applies to real work."
+      ];
+
+      const neutralTexts = [
+        "Things are okay overall. Some aspects could be better but it's manageable.",
+        "The workload varies a lot week to week. Some weeks are overwhelming, others are fine.",
+        "I understand most of the material but sometimes struggle to keep up with the pace.",
+        "The course is decent. I wish there were more practical examples and hands-on work.",
+        "It's a mixed experience. Some topics are interesting, others feel disconnected.",
+        "Doing alright, though I worry about whether I'm truly prepared for industry.",
+        "The content is solid but I sometimes feel lost in larger lecture sessions."
+      ];
+
+      const negativeTexts = [
+        "I'm struggling to keep up with the workload. It feels overwhelming most weeks.",
+        "The pace is too fast and I don't feel like I'm truly understanding the fundamentals.",
+        "I'm concerned about my performance and future prospects. Feeling quite stressed.",
+        "The lecture materials are often unclear and hard to follow. Need more support.",
+        "I'm falling behind and don't know how to catch up. Very anxious about exams.",
+        "The workload combined with other responsibilities is causing serious stress.",
+        "I don't feel prepared for the career ahead. The gap between coursework and industry feels huge.",
+        "Mental health is suffering due to constant pressure. Need better support systems."
+      ];
+
+      for (let i = 0; i < sentimentDistribution.length; i++) {
+        const sentiment = sentimentDistribution[i];
+        let answerText, sentimentScore;
+
+        if (sentiment === 'positive') {
+          answerText = positiveTexts[Math.floor(Math.random() * positiveTexts.length)];
+          sentimentScore = 70 + Math.floor(Math.random() * 30); // 70-100
+        } else if (sentiment === 'neutral') {
+          answerText = neutralTexts[Math.floor(Math.random() * neutralTexts.length)];
+          sentimentScore = 40 + Math.floor(Math.random() * 30); // 40-69
+        } else {
+          answerText = negativeTexts[Math.floor(Math.random() * negativeTexts.length)];
+          sentimentScore = 10 + Math.floor(Math.random() * 30); // 10-39
+        }
+
+        responses.push({
+          surveyId,
+          answerText,
+          sentimentScore,
+          answers: {}, // Scale responses would go here
+          aiSummaryTags: sentiment === 'positive' ? ['satisfied', 'engaged'] :
+                        sentiment === 'neutral' ? ['manageable', 'mixed-feelings'] :
+                        ['stressed', 'struggling']
+        });
+      }
+
+      return responses;
+    };
+
+    const responsesRef = collection(db, 'responses');
+
+    // Generate 12 responses per survey
+    surveyDocRefs.forEach(survey => {
+      const surveyResponses = generateResponses(survey.id, 12);
+      surveyResponses.forEach(response => {
+        const responseDocRef = doc(responsesRef);
+        responsesBatch.set(responseDocRef, {
+          ...response,
+          timestamp: serverTimestamp()
+        });
+        results.responses.push(responseDocRef.id);
+      });
+    });
+
+    await responsesBatch.commit();
+
+    // ============================================
+    // 5. CREATE ANONYMOUS WALL POSTS (20 posts)
+    // ============================================
+    const wallBatch = writeBatch(db);
+    const wallPostsData = [
+      { content: "Does anyone else feel like the workload this semester is impossible? I can barely sleep.", sentimentScore: 25, tags: ['stress', 'workload'] },
+      { content: "Really grateful for the study groups. You all make this journey so much better! 💙", sentimentScore: 85, tags: ['support', 'community'] },
+      { content: "Midterms are approaching and I'm terrified. Anyone have tips for managing exam anxiety?", sentimentScore: 35, tags: ['anxiety', 'exams'] },
+      { content: "The new lab sessions are amazing! Finally getting hands-on experience.", sentimentScore: 90, tags: ['learning', 'practical'] },
+      { content: "I don't understand why we're learning some of these topics. They seem irrelevant to actual jobs.", sentimentScore: 40, tags: ['curriculum', 'relevance'] },
+      { content: "Shoutout to the TAs who stay late to help us. You're the real MVPs!", sentimentScore: 95, tags: ['gratitude', 'support'] },
+      { content: "Feeling really isolated this semester. Hard to make friends when everyone's so busy.", sentimentScore: 30, tags: ['isolation', 'mental-health'] },
+      { content: "Just landed my first internship interview! This program really prepares you well.", sentimentScore: 88, tags: ['career', 'success'] },
+      { content: "The pace of lectures is way too fast. I'm constantly playing catch-up.", sentimentScore: 35, tags: ['pace', 'struggling'] },
+      { content: "Love how diverse our cohort is. Learning so much from different perspectives.", sentimentScore: 82, tags: ['diversity', 'learning'] },
+      { content: "Seriously considering dropping out. The imposter syndrome is overwhelming.", sentimentScore: 15, tags: ['imposter-syndrome', 'crisis'] },
+      { content: "The career services workshop was incredibly helpful. Highly recommend attending!", sentimentScore: 87, tags: ['career', 'resources'] },
+      { content: "Why is there no mental health support specific to CS students? We need it.", sentimentScore: 40, tags: ['mental-health', 'support'] },
+      { content: "Group projects are the worst. Always ends up being 1-2 people doing all the work.", sentimentScore: 30, tags: ['group-work', 'frustration'] },
+      { content: "Just want to say thanks to everyone who shares their notes. Lifesavers! 🙏", sentimentScore: 80, tags: ['gratitude', 'community'] },
+      { content: "The library is too crowded during exam season. Can we get more study spaces?", sentimentScore: 45, tags: ['facilities', 'resources'] },
+      { content: "Best decision ever to join this program. Challenging but so rewarding!", sentimentScore: 92, tags: ['satisfaction', 'growth'] },
+      { content: "I wish professors would record lectures. Can't always make it to 8am classes.", sentimentScore: 50, tags: ['accessibility', 'lectures'] },
+      { content: "Anyone else struggling to balance studies with part-time work? It's exhausting.", sentimentScore: 32, tags: ['work-life-balance', 'stress'] },
+      { content: "The networking events have been great for meeting industry professionals!", sentimentScore: 85, tags: ['networking', 'career'] }
+    ];
+
+    const wallRef = collection(db, 'anonymous_wall');
+
+    wallPostsData.forEach(post => {
+      const wallDocRef = doc(wallRef);
+      wallBatch.set(wallDocRef, {
+        ...post,
+        createdAt: serverTimestamp()
+      });
+      results.wallPosts.push(wallDocRef.id);
+    });
+
+    await wallBatch.commit();
+
+    // ============================================
+    // 6. CREATE SURVEY STATUS (Vote tracking)
+    // ============================================
+    const statusBatch = writeBatch(db);
+    const statusRef = collection(db, 'survey_status');
+
+    // Simulate votes from different visitors for each survey
+    surveyDocRefs.forEach(survey => {
+      // 12 unique visitors per survey
+      for (let i = 0; i < 12; i++) {
+        const statusDocRef = doc(statusRef);
+        statusBatch.set(statusDocRef, {
+          surveyId: survey.id,
+          visitorId: `demo_visitor_${survey.id}_${i}`,
+          hasVoted: true,
+          updatedAt: serverTimestamp()
+        });
+      }
+    });
+
+    await statusBatch.commit();
+
+    return {
+      success: true,
+      message: `Successfully seeded test data!`,
+      details: {
+        cohorts: results.cohorts.length,
+        students: results.students.length,
+        surveys: results.surveys.length,
+        responses: results.responses.length,
+        wallPosts: results.wallPosts.length
+      }
+    };
+  } catch (error) {
+    console.error('Seed data error:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to seed test data'
+    };
+  }
+};
+
+// Clear all test data from Firebase
+export const clearTestData = async () => {
+  if (!db) return { success: false, message: 'Database not configured' };
+
+  try {
+    const collections = ['students', 'surveys', 'responses', 'cohorts', 'survey_status', 'anonymous_wall', 'summary_cache'];
+    let totalDeleted = 0;
+
+    for (const collectionName of collections) {
+      const collectionRef = collection(db, collectionName);
+      const snapshot = await getDocs(collectionRef);
+
+      if (snapshot.empty) continue;
+
+      // Delete in batches of 500 (Firestore limit)
+      const docs = snapshot.docs;
+      const BATCH_SIZE = 500;
+
+      for (let i = 0; i < docs.length; i += BATCH_SIZE) {
+        const batch = writeBatch(db);
+        const batchDocs = docs.slice(i, i + BATCH_SIZE);
+
+        batchDocs.forEach(docSnapshot => {
+          batch.delete(docSnapshot.ref);
+        });
+
+        await batch.commit();
+        totalDeleted += batchDocs.length;
+      }
+    }
+
+    return {
+      success: true,
+      message: `Successfully deleted ${totalDeleted} documents across all collections`,
+      deletedCount: totalDeleted
+    };
+  } catch (error) {
+    console.error('Clear data error:', error);
+    return {
+      success: false,
+      message: error.message || 'Failed to clear test data'
+    };
+  }
+};
+
+// ===================
+// SUMMARY CACHE
+// ===================
+
+// Save AI-generated summary to cache
+export const saveSummaryCache = async (summary) => {
+  if (!db) return null;
+
+  try {
+    const cacheRef = collection(db, 'summary_cache');
+
+    // Delete existing cache (we only keep one latest summary)
+    const existingDocs = await getDocs(cacheRef);
+    const batch = writeBatch(db);
+    existingDocs.forEach(doc => {
+      batch.delete(doc.ref);
+    });
+    await batch.commit();
+
+    // Add new cache
+    const docRef = await addDoc(cacheRef, {
+      ...summary,
+      cachedAt: serverTimestamp(),
+      responseCount: summary.responseCount || 0
+    });
+
+    return docRef.id;
+  } catch (error) {
+    console.error('Save summary cache error:', error);
+    return null;
+  }
+};
+
+// Get cached summary
+export const getCachedSummary = async () => {
+  if (!db) return null;
+
+  try {
+    const cacheRef = collection(db, 'summary_cache');
+    const snapshot = await getDocs(cacheRef);
+
+    if (snapshot.empty) return null;
+
+    // Get the first (and should be only) cached summary
+    const doc = snapshot.docs[0];
+    return {
+      id: doc.id,
+      ...doc.data()
+    };
+  } catch (error) {
+    console.error('Get cached summary error:', error);
+    return null;
+  }
+};
+
+// Subscribe to summary cache changes
+export const subscribeToSummaryCache = (callback) => {
+  if (!db) {
+    callback(null);
+    return () => {};
+  }
+
+  const cacheRef = collection(db, 'summary_cache');
+  return onSnapshot(cacheRef, (snapshot) => {
+    if (snapshot.empty) {
+      callback(null);
+      return;
+    }
+
+    const doc = snapshot.docs[0];
+    callback({
+      id: doc.id,
+      ...doc.data()
+    });
+  }, (error) => {
+    console.error('Summary cache subscription error:', error);
+    callback(null);
+  });
+};
+
 // Export Firestore instance for advanced usage
 export { db, auth };
