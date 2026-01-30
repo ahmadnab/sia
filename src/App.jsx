@@ -4,6 +4,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import RoleSwitcher from './components/RoleSwitcher';
 import DemoBanner from './components/DemoBanner';
 import LoadingSpinner from './components/LoadingSpinner';
+import ThemeToggle from './components/ThemeToggle';
 
 // Public Pages
 import PublicLanding from './pages/PublicLanding';
@@ -50,6 +51,10 @@ const StudentLayout = () => {
           <Route path="/wall" element={<AnonymousWall />} />
           <Route path="*" element={<Navigate to="/student" replace />} />
         </Routes>
+      </div>
+      {/* Theme Toggle - Fixed Position */}
+      <div className="fixed top-20 right-4 z-40">
+        <ThemeToggle />
       </div>
       <RoleSwitcher />
     </>

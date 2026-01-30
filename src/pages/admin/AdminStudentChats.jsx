@@ -464,28 +464,33 @@ const AdminStudentChats = () => {
                       </div>
                     </div>
 
-                    {chatSummary.concerns && chatSummary.concerns.length > 0 && (
-                      <div className="mb-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <AlertTriangle className="text-amber-600" size={16} />
-                          <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Concerns Identified</p>
-                        </div>
-                        <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 dark:text-slate-300">
-                          {chatSummary.concerns.map((concern, idx) => (
-                            <li key={idx}>{concern}</li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
+                    {/* Concerns and Recommendations side by side */}
+                    {(chatSummary.concerns?.length > 0 || chatSummary.recommendations?.length > 0) && (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {chatSummary.concerns && chatSummary.concerns.length > 0 && (
+                          <div>
+                            <div className="flex items-center gap-2 mb-2">
+                              <AlertTriangle className="text-amber-600" size={16} />
+                              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Concerns Identified</p>
+                            </div>
+                            <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 dark:text-slate-300">
+                              {chatSummary.concerns.map((concern, idx) => (
+                                <li key={idx}>{concern}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
 
-                    {chatSummary.recommendations && chatSummary.recommendations.length > 0 && (
-                      <div>
-                        <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Recommendations</p>
-                        <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 dark:text-slate-300">
-                          {chatSummary.recommendations.map((rec, idx) => (
-                            <li key={idx}>{rec}</li>
-                          ))}
-                        </ul>
+                        {chatSummary.recommendations && chatSummary.recommendations.length > 0 && (
+                          <div>
+                            <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Recommendations</p>
+                            <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 dark:text-slate-300">
+                              {chatSummary.recommendations.map((rec, idx) => (
+                                <li key={idx}>{rec}</li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
                       </div>
                     )}
 

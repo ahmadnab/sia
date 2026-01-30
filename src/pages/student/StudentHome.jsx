@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { MessageCircle, ClipboardList, Shield, ChevronRight, Users, FileText } from 'lucide-react';
 import { useApp } from '../../context/AppContext';
 import { subscribeToSurveys, subscribeToCohorts } from '../../services/firebase';
-import ThemeToggle from '../../components/ThemeToggle';
 
 const StudentHome = () => {
   const { studentMilestone, setStudentMilestone, studentCohortId, setStudentCohortId } = useApp();
@@ -77,11 +76,6 @@ const StudentHome = () => {
           </div>
         </div>
       </header>
-
-      {/* Theme Toggle - Fixed Position */}
-      <div className="fixed bottom-6 right-6 z-40">
-        <ThemeToggle />
-      </div>
 
       <main className="max-w-7xl mx-auto px-4 lg:px-8 py-6 lg:py-8 space-y-8 pb-24">
         {/* Quick Actions */}
