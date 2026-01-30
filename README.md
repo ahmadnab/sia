@@ -121,24 +121,6 @@ The application includes several security measures:
 - **Security Headers**: Netlify configuration includes X-Frame-Options, X-XSS-Protection, and CSP headers
 - **Safe localStorage Access**: Try-catch wrappers prevent errors in private browsing modes
 
-## Deployment
-
-### Netlify (Recommended)
-
-1. Push your code to a Git repository (GitHub, GitLab, or Bitbucket)
-2. Connect the repository to Netlify
-3. Configure build settings:
-   - **Build command**: `npm run build`
-   - **Publish directory**: `dist`
-4. Add environment variables in Netlify dashboard (Site settings > Environment variables)
-5. Deploy!
-
-A `netlify.toml` configuration file is included with:
-- SPA routing redirects
-- Security headers
-- Asset caching
-
-See `NETLIFY_DEPLOYMENT.md` for detailed deployment instructions.
 
 ## Scripts
 
