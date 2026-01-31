@@ -2,10 +2,28 @@ import { AlertTriangle, X, Info } from 'lucide-react';
 import { useState } from 'react';
 import { useApp } from '../context/AppContext';
 
+// Safe localStorage access
+const getStorageValue = (key, defaultValue) => {
+  try {
+    const saved = localStorage.getItem(key);
+    return saved !== null ? JSON.parse(saved) : defaultValue;
+  } catch {
+    return defaultValue;
+  }
+};
+
+const setStorageValue = (key, value) => {
+  try {
+    localStorage.setItem(key, JSON.stringify(value));
+  } catch {
+    // Ignore storage errors (e.g., private browsing)
+  }
+};
+
 const DemoBanner = () => {
   const { configStatus } = useApp();
-  const [dismissed, setDismissed] = useState(false);
-  const [demoDismissed, setDemoDismissed] = useState(false);
+  const [dismissed, setDismissed] = useState(() => getStorageValue('sia_config_banner_dismissed', false));
+  const [demoDismissed, setDemoDismissed] = useState(() => getStorageValue('sia_demo_banner_dismissed', false));
 
   const missingConfigs = [];
   if (!configStatus.firebase) missingConfigs.push('Firebase');
@@ -25,8 +43,11 @@ const DemoBanner = () => {
               Add your keys to <code className="bg-amber-600/30 dark:bg-amber-700/40 px-1 rounded">.env</code> to enable real-time features.
             </span>
           </div>
-          <button 
-            onClick={() => setDismissed(true)}
+          <button
+            onClick={() => {
+              setDismissed(true);
+              setStorageValue('sia_config_banner_dismissed', true);
+            }}
             className="p-1 hover:bg-amber-600/30 dark:hover:bg-amber-700/40 rounded"
             aria-label="Dismiss banner"
           >
@@ -45,8 +66,11 @@ const DemoBanner = () => {
               Real authentication would be enabled in production.
             </span>
           </div>
-          <button 
-            onClick={() => setDemoDismissed(true)}
+          <button
+            onClick={() => {
+              setDemoDismissed(true);
+              setStorageValue('sia_demo_banner_dismissed', true);
+            }}
             className="p-1 hover:bg-sky-600/50 dark:hover:bg-sky-700/50 rounded"
             aria-label="Dismiss demo banner"
           >

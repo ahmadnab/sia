@@ -27,6 +27,7 @@ const AdminDashboard = () => {
   const [seedMessage, setSeedMessage] = useState(null);
   const [clearMessage, setClearMessage] = useState(null);
   const [showDemoData, setShowDemoData] = useState(false);
+  const [isChartReady, setIsChartReady] = useState(false);
 
   // Refs for timeout cleanup to prevent memory leaks
   const seedTimeoutRef = useRef(null);
@@ -38,6 +39,12 @@ const AdminDashboard = () => {
       if (seedTimeoutRef.current) clearTimeout(seedTimeoutRef.current);
       if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
     };
+  }, []);
+
+  // Delay chart rendering to ensure container dimensions are calculated
+  useEffect(() => {
+    const timer = setTimeout(() => setIsChartReady(true), 100);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -493,23 +500,25 @@ const AdminDashboard = () => {
             </div>
             <div className="flex items-center gap-4">
               <div className="w-24 h-24">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={gaugeData}
-                      cx="50%"
-                      cy="50%"
-                      innerRadius={30}
-                      outerRadius={40}
-                      startAngle={90}
-                      endAngle={-270}
-                      dataKey="value"
-                    >
-                      <Cell fill={sentimentColor} />
-                      <Cell fill="#E2E8F0" className="dark:fill-slate-700" />
-                    </Pie>
-                  </PieChart>
-                </ResponsiveContainer>
+                {isChartReady && (
+                  <ResponsiveContainer width="100%" height="100%">
+                    <PieChart>
+                      <Pie
+                        data={gaugeData}
+                        cx="50%"
+                        cy="50%"
+                        innerRadius={30}
+                        outerRadius={40}
+                        startAngle={90}
+                        endAngle={-270}
+                        dataKey="value"
+                      >
+                        <Cell fill={sentimentColor} />
+                        <Cell fill="#E2E8F0" className="dark:fill-slate-700" />
+                      </Pie>
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
               </div>
               <div>
                 <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{avgSentiment}</p>
@@ -623,7 +632,7 @@ const AdminDashboard = () => {
             </div>
             <div className="flex items-center gap-4 pointer-events-none">
               <div className="w-16 h-16 pointer-events-none">
-                {riskDistributionData.length > 0 ? (
+                {riskDistributionData.length > 0 && isChartReady ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
@@ -695,6 +704,7 @@ const AdminDashboard = () => {
               )}
             </div>
             <div className="h-48">
+              {isChartReady && (
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={trendData.filter(d => d.sentiment !== null)}>
                   <defs>
@@ -727,16 +737,17 @@ const AdminDashboard = () => {
                     formatter={(value, name) => [value, name === 'sentiment' ? 'Sentiment Score' : name]}
                     labelFormatter={(label) => `${label}`}
                   />
-                  <Area 
-                    type="monotone" 
-                    dataKey="sentiment" 
-                    stroke="#0EA5E9" 
+                  <Area
+                    type="monotone"
+                    dataKey="sentiment"
+                    stroke="#0EA5E9"
                     strokeWidth={2}
                     fill="url(#sentimentGradient)"
                     connectNulls
                   />
                 </AreaChart>
               </ResponsiveContainer>
+              )}
             </div>
             {trendData.filter(d => d.sentiment !== null).length === 0 && (
               <div className="flex items-center justify-center h-48 text-slate-400 dark:text-slate-500 text-sm">
@@ -751,6 +762,7 @@ const AdminDashboard = () => {
                 <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Score Distribution</h4>
                 {responses.filter(r => r.sentimentScore != null).length > 0 ? (
                   <div className="h-32">
+                    {isChartReady && (
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={sentimentDistribution} barCategoryGap="15%">
                         <XAxis 
@@ -794,6 +806,7 @@ const AdminDashboard = () => {
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
+                    )}
                   </div>
                 ) : (
                   <div className="h-32 flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">

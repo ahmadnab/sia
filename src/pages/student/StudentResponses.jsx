@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { ArrowLeft, FileText, Calendar, MessageSquare } from 'lucide-react';
 import { getStudentResponses, subscribeToSurveys } from '../../services/firebase';
 import { useApp } from '../../context/AppContext';
-import LoadingSpinner from '../../components/LoadingSpinner';
+import { SkeletonResponse } from '../../components/Skeleton';
 
 const StudentResponses = () => {
   const { configStatus } = useApp();
@@ -123,10 +123,12 @@ const StudentResponses = () => {
       </header>
 
       {/* Main Content */}
-      <main className="max-w-4xl mx-auto p-4 lg:p-6">
+      <main className="max-w-4xl mx-auto p-4 lg:p-6 pb-24">
         {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <LoadingSpinner size="lg" />
+          <div className="space-y-4">
+            <SkeletonResponse />
+            <SkeletonResponse />
+            <SkeletonResponse />
           </div>
         ) : responses.length === 0 ? (
           <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-12 text-center">

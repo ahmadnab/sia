@@ -232,7 +232,7 @@ const AdminAnnouncements = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-2">
                           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{announcement.title}</h3>
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex items-center gap-1 ${getPriorityBadge(announcement.priority)}`}>
+                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex items-center gap-1 capitalize ${getPriorityBadge(announcement.priority)}`}>
                             {getPriorityIcon(announcement.priority)}
                             {announcement.priority}
                           </span>
@@ -298,7 +298,7 @@ const AdminAnnouncements = () => {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-2">
                           <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{announcement.title}</h3>
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex items-center gap-1 ${getPriorityBadge(announcement.priority)}`}>
+                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex items-center gap-1 capitalize ${getPriorityBadge(announcement.priority)}`}>
                             {getPriorityIcon(announcement.priority)}
                             {announcement.priority}
                           </span>
