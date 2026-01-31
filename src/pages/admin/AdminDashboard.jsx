@@ -950,8 +950,8 @@ const AdminDashboard = () => {
 
         {/* Response Rate Detail Modal */}
         {showResponseRateModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowResponseRateModal(false)}>
-            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 p-4 pt-[10vh] sm:pt-4 overflow-y-auto" onClick={() => setShowResponseRateModal(false)}>
+            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[85vh] sm:max-h-[85dvh] overflow-y-auto my-auto" onClick={(e) => e.stopPropagation()}>
               <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Response Rate Details</h2>
                 <button onClick={() => setShowResponseRateModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
@@ -991,8 +991,8 @@ const AdminDashboard = () => {
 
         {/* Recent Activity Detail Modal */}
         {showRecentActivityModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowRecentActivityModal(false)}>
-            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 p-4 pt-[10vh] sm:pt-4 overflow-y-auto" onClick={() => setShowRecentActivityModal(false)}>
+            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[85vh] sm:max-h-[85dvh] overflow-y-auto my-auto" onClick={(e) => e.stopPropagation()}>
               <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Recent Activity Timeline</h2>
                 <button onClick={() => setShowRecentActivityModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
@@ -1039,19 +1039,19 @@ const AdminDashboard = () => {
 
         {/* Risk Distribution Detail Modal */}
         {showRiskDistributionModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowRiskDistributionModal(false)}>
-            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 p-4 pt-[10vh] sm:pt-4 overflow-y-auto" onClick={() => setShowRiskDistributionModal(false)}>
+            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[85vh] sm:max-h-[85dvh] overflow-y-auto my-auto" onClick={(e) => e.stopPropagation()}>
               <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Risk Distribution Details</h2>
                 <button onClick={() => setShowRiskDistributionModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
                   <X size={20} className="text-slate-500 dark:text-slate-400" />
                 </button>
               </div>
-              <div className="p-6">
-                <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="p-4 sm:p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
                   <button
                     onClick={() => setRiskFilterLevel('high')}
-                    className={`text-left rounded-lg p-4 transition-all ${
+                    className={`text-left rounded-lg p-3 sm:p-4 transition-all ${
                       riskFilterLevel === 'high'
                         ? 'bg-red-50 dark:bg-red-900/20 border-2 border-red-500 dark:border-red-600 shadow-md'
                         : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 hover:border-red-300 dark:hover:border-red-700'
@@ -1068,7 +1068,7 @@ const AdminDashboard = () => {
                   </button>
                   <button
                     onClick={() => setRiskFilterLevel('medium')}
-                    className={`text-left rounded-lg p-4 transition-all ${
+                    className={`text-left rounded-lg p-3 sm:p-4 transition-all ${
                       riskFilterLevel === 'medium'
                         ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500 dark:border-amber-600 shadow-md'
                         : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/30 hover:border-amber-300 dark:hover:border-amber-700'
@@ -1085,7 +1085,7 @@ const AdminDashboard = () => {
                   </button>
                   <button
                     onClick={() => setRiskFilterLevel('low')}
-                    className={`text-left rounded-lg p-4 transition-all ${
+                    className={`text-left rounded-lg p-3 sm:p-4 transition-all ${
                       riskFilterLevel === 'low'
                         ? 'bg-green-50 dark:bg-green-900/20 border-2 border-green-500 dark:border-green-600 shadow-md'
                         : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 hover:border-green-300 dark:hover:border-green-700'
@@ -1103,7 +1103,7 @@ const AdminDashboard = () => {
                   {riskMetrics.unknownRiskCount > 0 && (
                     <button
                       onClick={() => setRiskFilterLevel('unknown')}
-                      className={`text-left rounded-lg p-4 transition-all ${
+                      className={`text-left rounded-lg p-3 sm:p-4 transition-all ${
                         riskFilterLevel === 'unknown'
                           ? 'bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-500 dark:border-slate-500 shadow-md'
                           : 'bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
@@ -1167,8 +1167,8 @@ const AdminDashboard = () => {
 
         {/* Needs Attention Modal */}
         {showNeedsAttentionModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4" onClick={() => setShowNeedsAttentionModal(false)}>
-            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 p-4 pt-[10vh] sm:pt-4 overflow-y-auto" onClick={() => setShowNeedsAttentionModal(false)}>
+            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[85vh] sm:max-h-[85dvh] overflow-y-auto my-auto" onClick={(e) => e.stopPropagation()}>
               <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <AlertTriangle className="text-red-500" size={24} />

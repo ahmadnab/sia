@@ -1,9 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Plus, Sparkles, X, Check, Clock, Archive, Edit2, Trash2, GripVertical, Send, FileText, Bell, Users, Mail, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
+import { Plus, Sparkles, X, Check, Clock, Archive, Edit2, Trash2, GripVertical, Send, FileText, Bell, Users, Mail, Calendar, ChevronDown, ChevronUp, TrendingUp, Tag, BarChart3, MessageSquare, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminLayout from '../../components/AdminLayout';
 import { subscribeToSurveys, subscribeToCohorts, createSurvey, closeSurvey, publishSurvey, deleteSurvey, getSurveyResponsesWithStudents } from '../../services/firebase';
-import { generateSurveyQuestions } from '../../services/gemini';
+import { generateSurveyQuestions, generateResponseSummary } from '../../services/gemini';
 import { useApp } from '../../context/AppContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
@@ -38,6 +38,11 @@ const AdminSurveys = () => {
   const [surveyResponses, setSurveyResponses] = useState([]);
   const [isLoadingResponses, setIsLoadingResponses] = useState(false);
 
+  // Theme analysis state
+  const [themeAnalysis, setThemeAnalysis] = useState(null);
+  const [isAnalyzingThemes, setIsAnalyzingThemes] = useState(false);
+  const [activeTab, setActiveTab] = useState('themes'); // 'themes' or 'responses'
+
   useEffect(() => {
     const unsubSurveys = subscribeToSurveys(setSurveys);
     const unsubCohorts = subscribeToCohorts(setCohorts);
@@ -51,10 +56,17 @@ const AdminSurveys = () => {
     setSelectedSurvey(survey);
     setIsResponsesModalOpen(true);
     setIsLoadingResponses(true);
+    setThemeAnalysis(null);
+    setActiveTab('themes');
 
     try {
       const responses = await getSurveyResponsesWithStudents(survey.id);
       setSurveyResponses(responses);
+
+      // Auto-analyze themes if we have responses
+      if (responses.length > 0 && configStatus.gemini) {
+        analyzeThemes(responses);
+      }
     } catch (error) {
       console.error('Error loading responses:', error);
       setSurveyResponses([]);
@@ -63,10 +75,40 @@ const AdminSurveys = () => {
     setIsLoadingResponses(false);
   };
 
+  const analyzeThemes = async (responses) => {
+    setIsAnalyzingThemes(true);
+    try {
+      // Prepare response data for analysis
+      const responseTexts = responses.map(r => {
+        const parts = [];
+        if (r.answerText) parts.push(r.answerText);
+        if (r.answers) {
+          Object.values(r.answers).forEach(a => {
+            if (typeof a === 'string') parts.push(a);
+          });
+        }
+        return parts.join(' ');
+      }).filter(t => t.trim());
+
+      const analysis = await generateResponseSummary(responseTexts);
+      setThemeAnalysis(analysis);
+    } catch (error) {
+      console.error('Theme analysis error:', error);
+      setThemeAnalysis({
+        summary: 'Unable to analyze themes. Please try again.',
+        themes: [],
+        themeSentiments: []
+      });
+    }
+    setIsAnalyzingThemes(false);
+  };
+
   const handleCloseResponsesModal = () => {
     setIsResponsesModalOpen(false);
     setSelectedSurvey(null);
     setSurveyResponses([]);
+    setThemeAnalysis(null);
+    setActiveTab('themes');
   };
 
   const formatDate = (timestamp) => {
@@ -85,6 +127,20 @@ const AdminSurveys = () => {
     if (score >= 70) return 'text-green-600 dark:text-green-400';
     if (score >= 40) return 'text-amber-600 dark:text-amber-400';
     return 'text-red-600 dark:text-red-400';
+  };
+
+  const getSentimentBgColor = (score) => {
+    if (score >= 70) return 'bg-green-500';
+    if (score >= 40) return 'bg-amber-500';
+    return 'bg-red-500';
+  };
+
+  const getSentimentLabel = (score) => {
+    if (score >= 80) return 'Very Positive';
+    if (score >= 60) return 'Positive';
+    if (score >= 40) return 'Neutral';
+    if (score >= 20) return 'Negative';
+    return 'Very Negative';
   };
 
   // Reset form when modal closes
@@ -926,8 +982,36 @@ const AdminSurveys = () => {
                   </button>
                 </div>
 
+                {/* Tab Navigation */}
+                {!isLoadingResponses && surveyResponses.length > 0 && (
+                  <div className="flex border-b border-slate-200 dark:border-slate-700 px-6">
+                    <button
+                      onClick={() => setActiveTab('themes')}
+                      className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                        activeTab === 'themes'
+                          ? 'border-sky-500 text-sky-600 dark:text-sky-400'
+                          : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                      }`}
+                    >
+                      <BarChart3 size={16} />
+                      Theme Analysis
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('responses')}
+                      className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
+                        activeTab === 'responses'
+                          ? 'border-sky-500 text-sky-600 dark:text-sky-400'
+                          : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                      }`}
+                    >
+                      <MessageSquare size={16} />
+                      Individual Responses ({surveyResponses.length})
+                    </button>
+                  </div>
+                )}
+
                 {/* Modal Body */}
-                <div className="p-6 overflow-y-auto max-h-[calc(85vh-140px)]">
+                <div className="p-6 overflow-y-auto max-h-[calc(85vh-200px)]">
                   {isLoadingResponses ? (
                     <div className="flex items-center justify-center py-20">
                       <LoadingSpinner size="lg" />
@@ -938,14 +1022,154 @@ const AdminSurveys = () => {
                       <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">No responses yet</h3>
                       <p className="text-slate-500 dark:text-slate-400">This survey hasn't received any responses.</p>
                     </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="bg-slate-50 dark:bg-slate-700/50 rounded-lg p-4 mb-6">
-                        <p className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                          Total Responses: <span className="text-sky-600 dark:text-sky-400">{surveyResponses.length}</span>
-                        </p>
+                  ) : activeTab === 'themes' ? (
+                    /* Theme Analysis Tab */
+                    <div className="space-y-6">
+                      {/* Summary Stats */}
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="bg-sky-50 dark:bg-sky-900/20 rounded-xl p-4 border border-sky-100 dark:border-sky-900/30">
+                          <div className="flex items-center gap-2 text-sky-600 dark:text-sky-400 mb-2">
+                            <FileText size={18} />
+                            <span className="text-sm font-medium">Total Responses</span>
+                          </div>
+                          <p className="text-3xl font-bold text-sky-700 dark:text-sky-300">{surveyResponses.length}</p>
+                        </div>
+                        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 border border-purple-100 dark:border-purple-900/30">
+                          <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-2">
+                            <Tag size={18} />
+                            <span className="text-sm font-medium">Themes Identified</span>
+                          </div>
+                          <p className="text-3xl font-bold text-purple-700 dark:text-purple-300">
+                            {themeAnalysis?.themes?.length || '—'}
+                          </p>
+                        </div>
+                        <div className="bg-teal-50 dark:bg-teal-900/20 rounded-xl p-4 border border-teal-100 dark:border-teal-900/30">
+                          <div className="flex items-center gap-2 text-teal-600 dark:text-teal-400 mb-2">
+                            <TrendingUp size={18} />
+                            <span className="text-sm font-medium">Avg Sentiment</span>
+                          </div>
+                          <p className="text-3xl font-bold text-teal-700 dark:text-teal-300">
+                            {themeAnalysis?.themeSentiments?.length > 0
+                              ? Math.round(themeAnalysis.themeSentiments.reduce((a, b) => a + b.sentiment, 0) / themeAnalysis.themeSentiments.length)
+                              : '—'}
+                          </p>
+                        </div>
                       </div>
 
+                      {/* AI Analysis */}
+                      {isAnalyzingThemes ? (
+                        <div className="bg-slate-50 dark:bg-slate-700/30 rounded-xl p-8 text-center">
+                          <LoadingSpinner size="md" />
+                          <p className="text-slate-600 dark:text-slate-400 mt-4">Analyzing feedback themes...</p>
+                        </div>
+                      ) : themeAnalysis ? (
+                        <>
+                          {/* Executive Summary */}
+                          <div className="bg-gradient-to-br from-sky-50 to-purple-50 dark:from-sky-900/20 dark:to-purple-900/20 rounded-xl p-5 border border-sky-100 dark:border-sky-900/30">
+                            <div className="flex items-center justify-between mb-3">
+                              <div className="flex items-center gap-2">
+                                <Sparkles size={18} className="text-sky-600 dark:text-sky-400" />
+                                <h3 className="font-semibold text-slate-900 dark:text-slate-100">AI Summary</h3>
+                              </div>
+                              <button
+                                onClick={() => analyzeThemes(surveyResponses)}
+                                className="flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300"
+                              >
+                                <RefreshCw size={12} />
+                                Re-analyze
+                              </button>
+                            </div>
+                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
+                              {themeAnalysis.summary}
+                            </p>
+                          </div>
+
+                          {/* Theme Cards */}
+                          {themeAnalysis.themeSentiments && themeAnalysis.themeSentiments.length > 0 && (
+                            <div>
+                              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                                <Tag size={16} />
+                                Key Themes & Sentiment
+                              </h3>
+                              <div className="grid gap-3">
+                                {themeAnalysis.themeSentiments.map((theme, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4"
+                                  >
+                                    <div className="flex items-center justify-between mb-3">
+                                      <div className="flex items-center gap-3">
+                                        <span className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                                          {theme.theme}
+                                        </span>
+                                        {theme.mentions && (
+                                          <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full">
+                                            {theme.mentions} mention{theme.mentions !== 1 ? 's' : ''}
+                                          </span>
+                                        )}
+                                      </div>
+                                      <div className="text-right">
+                                        <span className={`text-lg font-bold ${getSentimentColor(theme.sentiment)}`}>
+                                          {theme.sentiment}
+                                        </span>
+                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                          {getSentimentLabel(theme.sentiment)}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    {/* Sentiment Bar */}
+                                    <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                      <div
+                                        className={`h-full rounded-full transition-all ${getSentimentBgColor(theme.sentiment)}`}
+                                        style={{ width: `${theme.sentiment}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Simple Theme List (if no sentiment data) */}
+                          {(!themeAnalysis.themeSentiments || themeAnalysis.themeSentiments.length === 0) && themeAnalysis.themes && themeAnalysis.themes.length > 0 && (
+                            <div>
+                              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                                Recurring Themes
+                              </h3>
+                              <div className="flex flex-wrap gap-2">
+                                {themeAnalysis.themes.map((theme, idx) => (
+                                  <span
+                                    key={idx}
+                                    className="px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-medium"
+                                  >
+                                    {theme}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                        </>
+                      ) : !configStatus.gemini ? (
+                        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-5 border border-amber-100 dark:border-amber-900/30">
+                          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 mb-2">
+                            <Sparkles size={18} />
+                            <span className="font-medium">AI Analysis Unavailable</span>
+                          </div>
+                          <p className="text-sm text-amber-600 dark:text-amber-400">
+                            Add your Gemini API key in the .env file to enable automatic theme analysis.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="bg-slate-50 dark:bg-slate-700/30 rounded-xl p-5 text-center">
+                          <p className="text-slate-600 dark:text-slate-400">
+                            Theme analysis will appear here after processing.
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* Individual Responses Tab */
+                    <div className="space-y-4">
                       {surveyResponses.map((response, idx) => (
                         <div
                           key={response.id}

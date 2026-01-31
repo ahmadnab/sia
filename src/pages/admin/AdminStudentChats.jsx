@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, Search, Users, AlertTriangle, TrendingUp, FileText, X, ChevronRight, RefreshCw } from 'lucide-react';
+import { MessageCircle, Search, Users, AlertTriangle, TrendingUp, FileText, X, ChevronRight, RefreshCw, Send, Mail } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import AdminLayout from '../../components/AdminLayout';
-import { getChatAnalytics, subscribeToCohorts, subscribeToChatHistory, getCachedChatSummary, saveChatSummaryCache } from '../../services/firebase';
+import { getChatAnalytics, subscribeToCohorts, subscribeToChatHistory, getCachedChatSummary, saveChatSummaryCache, sendDirectMessage, subscribeToAllDirectMessages } from '../../services/firebase';
 import { generateChatSummary } from '../../services/gemini';
 import LoadingSpinner from '../../components/LoadingSpinner';
 
@@ -25,6 +25,14 @@ const AdminStudentChats = () => {
   const [isLoadingChat, setIsLoadingChat] = useState(false);
   const [isGeneratingSummary, setIsGeneratingSummary] = useState(false);
 
+  // Direct message state
+  const [showMessageForm, setShowMessageForm] = useState(false);
+  const [messageSubject, setMessageSubject] = useState('');
+  const [messageContent, setMessageContent] = useState('');
+  const [isSendingMessage, setIsSendingMessage] = useState(false);
+  const [allDirectMessages, setAllDirectMessages] = useState([]);
+  const [notification, setNotification] = useState(null);
+
   // Load cohorts and students
   useEffect(() => {
     const loadData = async () => {
@@ -32,6 +40,9 @@ const AdminStudentChats = () => {
 
       // Load cohorts for filter
       const unsubCohorts = subscribeToCohorts(setCohorts);
+
+      // Load direct messages
+      const unsubMessages = subscribeToAllDirectMessages(setAllDirectMessages);
 
       // Load students with chat data
       try {
@@ -44,7 +55,10 @@ const AdminStudentChats = () => {
 
       setIsLoading(false);
 
-      return () => unsubCohorts();
+      return () => {
+        unsubCohorts();
+        unsubMessages();
+      };
     };
 
     loadData();
@@ -159,6 +173,41 @@ const AdminStudentChats = () => {
     setSelectedStudent(null);
     setChatHistory([]);
     setChatSummary(null);
+    setShowMessageForm(false);
+    setMessageSubject('');
+    setMessageContent('');
+  };
+
+  // Send direct message
+  const handleSendMessage = async () => {
+    if (!selectedStudent || !messageSubject.trim() || !messageContent.trim()) return;
+
+    setIsSendingMessage(true);
+    try {
+      await sendDirectMessage(selectedStudent.email, {
+        subject: messageSubject.trim(),
+        content: messageContent.trim(),
+        senderName: 'Course Coordinator'
+      });
+      setShowMessageForm(false);
+      setMessageSubject('');
+      setMessageContent('');
+      showNotificationMsg('Message sent successfully!', 'success');
+    } catch (error) {
+      console.error('Error sending message:', error);
+      showNotificationMsg('Failed to send message.', 'error');
+    }
+    setIsSendingMessage(false);
+  };
+
+  const showNotificationMsg = (message, type = 'info') => {
+    setNotification({ message, type });
+    setTimeout(() => setNotification(null), 4000);
+  };
+
+  // Get messages sent to selected student
+  const getStudentMessages = (email) => {
+    return allDirectMessages.filter(m => m.studentEmail === email?.toLowerCase());
   };
 
   // Helper functions
@@ -199,6 +248,27 @@ const AdminStudentChats = () => {
   return (
     <AdminLayout>
       <div className="min-h-screen">
+        {/* Notification */}
+        <AnimatePresence>
+          {notification && (
+            <motion.div
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -20 }}
+              className={`fixed top-4 right-4 z-50 p-4 rounded-xl flex items-center gap-3 shadow-lg ${
+                notification.type === 'success'
+                  ? 'bg-green-50 dark:bg-green-900/90 border border-green-200 dark:border-green-700 text-green-700 dark:text-green-300'
+                  : 'bg-red-50 dark:bg-red-900/90 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300'
+              }`}
+            >
+              <span>{notification.message}</span>
+              <button onClick={() => setNotification(null)} className="p-1 hover:bg-black/5 rounded">
+                <X size={16} />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Header */}
         <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-6">
         <div className="max-w-7xl mx-auto">
@@ -402,16 +472,112 @@ const AdminStudentChats = () => {
                     {selectedStudent.riskLevel || 'unknown'} risk
                   </span>
                 </div>
-                <button
-                  onClick={closeModal}
-                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                >
-                  <X size={20} className="text-slate-600 dark:text-slate-400" />
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={() => setShowMessageForm(!showMessageForm)}
+                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
+                      showMessageForm
+                        ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300'
+                        : 'bg-sky-500 hover:bg-sky-600 text-white'
+                    }`}
+                  >
+                    <Mail size={16} />
+                    Send Message
+                  </button>
+                  <button
+                    onClick={closeModal}
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  >
+                    <X size={20} className="text-slate-600 dark:text-slate-400" />
+                  </button>
+                </div>
               </div>
 
               {/* Modal Content */}
               <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                {/* Direct Message Form */}
+                <AnimatePresence>
+                  {showMessageForm && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-700/50 rounded-xl p-5 space-y-4"
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <Mail className="text-sky-600 dark:text-sky-400" size={18} />
+                        <h3 className="font-semibold text-slate-900 dark:text-white">Send Direct Message</h3>
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Subject</label>
+                        <input
+                          type="text"
+                          value={messageSubject}
+                          onChange={(e) => setMessageSubject(e.target.value)}
+                          placeholder="e.g., Follow-up on your concerns"
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Message</label>
+                        <textarea
+                          value={messageContent}
+                          onChange={(e) => setMessageContent(e.target.value)}
+                          placeholder="Write your message here..."
+                          rows={4}
+                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
+                        />
+                      </div>
+                      <div className="flex items-center justify-end gap-2">
+                        <button
+                          onClick={() => setShowMessageForm(false)}
+                          className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={handleSendMessage}
+                          disabled={!messageSubject.trim() || !messageContent.trim() || isSendingMessage}
+                          className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                        >
+                          {isSendingMessage ? (
+                            <LoadingSpinner size="sm" light />
+                          ) : (
+                            <Send size={16} />
+                          )}
+                          Send
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+
+                {/* Previously Sent Messages */}
+                {getStudentMessages(selectedStudent?.email).length > 0 && (
+                  <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+                    <div className="flex items-center gap-2 mb-4">
+                      <Mail className="text-slate-500 dark:text-slate-400" size={18} />
+                      <h3 className="font-semibold text-slate-900 dark:text-white">Sent Messages ({getStudentMessages(selectedStudent?.email).length})</h3>
+                    </div>
+                    <div className="space-y-3">
+                      {getStudentMessages(selectedStudent?.email).map(msg => (
+                        <div key={msg.id} className={`p-3 rounded-lg border ${msg.isRead ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700' : 'bg-sky-50 dark:bg-sky-900/20 border-sky-200 dark:border-sky-700/50'}`}>
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="font-medium text-slate-900 dark:text-white">{msg.subject}</p>
+                            <span className={`text-xs px-2 py-0.5 rounded-full ${msg.isRead ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'}`}>
+                              {msg.isRead ? 'Read' : 'Unread'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">{msg.content}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
+                            Sent {formatDate(msg.createdAt)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 {/* AI Summary */}
                 {isGeneratingSummary ? (
                   <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-700">

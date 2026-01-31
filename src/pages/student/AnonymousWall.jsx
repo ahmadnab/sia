@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Shield, Send, MessageSquare, Lock, Sparkles, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Shield, Send, MessageSquare, Lock, Sparkles, AlertCircle, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { subscribeToWallPosts, submitWallPost } from '../../services/firebase';
+import { subscribeToWallPosts, submitWallPost, subscribeToAllWallReplies } from '../../services/firebase';
 import { analyzeSentiment } from '../../services/gemini';
 import { useApp } from '../../context/AppContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -10,19 +10,44 @@ import LoadingSpinner from '../../components/LoadingSpinner';
 const AnonymousWall = () => {
   const { configStatus } = useApp();
   const [posts, setPosts] = useState([]);
+  const [allReplies, setAllReplies] = useState([]);
+  const [expandedPosts, setExpandedPosts] = useState(new Set());
   const [newPost, setNewPost] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitPhase, setSubmitPhase] = useState(null);
   const [submitError, setSubmitError] = useState(null);
 
   useEffect(() => {
-    const unsubscribe = subscribeToWallPosts(setPosts);
-    return () => unsubscribe();
+    const unsubPosts = subscribeToWallPosts(setPosts);
+    const unsubReplies = subscribeToAllWallReplies(setAllReplies);
+    return () => {
+      unsubPosts();
+      unsubReplies();
+    };
   }, []);
+
+  // Group replies by postId
+  const repliesByPost = allReplies.reduce((acc, reply) => {
+    if (!acc[reply.postId]) acc[reply.postId] = [];
+    acc[reply.postId].push(reply);
+    return acc;
+  }, {});
+
+  const toggleExpanded = (postId) => {
+    setExpandedPosts(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(postId)) {
+        newSet.delete(postId);
+      } else {
+        newSet.add(postId);
+      }
+      return newSet;
+    });
+  };
 
   const handleSubmit = async () => {
     if (!newPost.trim() || isSubmitting) return;
-    
+
     setIsSubmitting(true);
     setSubmitPhase('processing');
 
@@ -55,7 +80,7 @@ const AnonymousWall = () => {
       setSubmitPhase(null);
       setSubmitError('Failed to share your thought. Please try again.');
     }
-    
+
     setIsSubmitting(false);
   };
 
@@ -64,7 +89,7 @@ const AnonymousWall = () => {
     const date = timestamp.toDate?.() || new Date(timestamp);
     const now = new Date();
     const diff = now - date;
-    
+
     if (diff < 60000) return 'Just now';
     if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
     if (diff < 86400000) return `${Math.floor(diff / 3600000)}h ago`;
@@ -96,7 +121,7 @@ const AnonymousWall = () => {
           <div>
             <p className="text-sm text-teal-300 font-medium">Your identity is protected</p>
             <p className="text-xs text-teal-400/80 mt-1">
-              Posts on this wall are completely untraceable. Share your thoughts, concerns, 
+              Posts on this wall are completely untraceable. Share your thoughts, concerns,
               or feedback knowing that your identity will never be linked to your words.
             </p>
           </div>
@@ -115,14 +140,14 @@ const AnonymousWall = () => {
             disabled={isSubmitting}
             className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none disabled:opacity-50"
           />
-          
+
           {/* Submit Button or Status */}
           <div className="mt-3 flex items-center justify-between">
             <div className="flex items-center gap-1 text-xs text-slate-500">
               <Lock size={12} />
               <span>No identity stored</span>
             </div>
-            
+
             {submitError && (
               <div className="flex items-center gap-2 text-sm text-red-400" role="alert">
                 <AlertCircle size={16} />
@@ -178,7 +203,7 @@ const AnonymousWall = () => {
           <h2 className="text-sm font-medium text-slate-400 uppercase tracking-wide mb-3">
             Recent Posts ({posts.length})
           </h2>
-          
+
           {posts.length === 0 ? (
             <div className="bg-slate-800 border border-slate-700 rounded-xl p-8 text-center">
               <MessageSquare className="mx-auto text-slate-600 mb-2" size={32} />
@@ -188,35 +213,87 @@ const AnonymousWall = () => {
           ) : (
             <div className="space-y-3">
               <AnimatePresence>
-                {posts.map((post) => (
-                  <motion.div
-                    key={post.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className="bg-slate-800 border border-slate-700 rounded-xl p-4"
-                  >
-                    <p className="text-slate-200">{post.content}</p>
-                    <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-700">
-                      <div className="flex items-center gap-2">
-                        <div className="w-6 h-6 bg-slate-700 rounded-full flex items-center justify-center">
-                          <Shield size={12} className="text-teal-400" />
+                {posts.map((post) => {
+                  const postReplies = repliesByPost[post.id] || [];
+                  const isExpanded = expandedPosts.has(post.id);
+                  const hasReplies = postReplies.length > 0;
+
+                  return (
+                    <motion.div
+                      key={post.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="bg-slate-800 border border-slate-700 rounded-xl overflow-hidden"
+                    >
+                      {/* Post Content */}
+                      <div className="p-4">
+                        <p className="text-slate-200">{post.content}</p>
+                        <div className="flex items-center justify-between mt-3 pt-3 border-t border-slate-700">
+                          <div className="flex items-center gap-2">
+                            <div className="w-6 h-6 bg-slate-700 rounded-full flex items-center justify-center">
+                              <Shield size={12} className="text-teal-400" />
+                            </div>
+                            <span className="text-xs text-slate-500">Anonymous</span>
+                          </div>
+                          <span className="text-xs text-slate-500">{formatTime(post.createdAt)}</span>
                         </div>
-                        <span className="text-xs text-slate-500">Anonymous</span>
+                        {post.tags?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {post.tags.map((tag, i) => (
+                              <span key={i} className="px-2 py-0.5 bg-slate-700 text-slate-400 text-xs rounded-full">
+                                #{tag}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Replies indicator */}
+                        {hasReplies && (
+                          <button
+                            onClick={() => toggleExpanded(post.id)}
+                            className="mt-3 flex items-center gap-1.5 text-sm text-sky-400 hover:text-sky-300 transition-colors"
+                          >
+                            <MessageCircle size={14} />
+                            <span>{postReplies.length} {postReplies.length === 1 ? 'reply' : 'replies'} from coordinator</span>
+                            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                          </button>
+                        )}
                       </div>
-                      <span className="text-xs text-slate-500">{formatTime(post.createdAt)}</span>
-                    </div>
-                    {post.tags?.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mt-2">
-                        {post.tags.map((tag, i) => (
-                          <span key={i} className="px-2 py-0.5 bg-slate-700 text-slate-400 text-xs rounded-full">
-                            #{tag}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </motion.div>
-                ))}
+
+                      {/* Replies Section */}
+                      <AnimatePresence>
+                        {isExpanded && hasReplies && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="border-t border-slate-700 bg-slate-800/50"
+                          >
+                            <div className="p-4 space-y-3">
+                              {postReplies.map((reply) => (
+                                <div key={reply.id} className="bg-sky-900/20 border border-sky-700/30 rounded-lg p-3">
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <div className="w-6 h-6 bg-sky-500/20 rounded-full flex items-center justify-center">
+                                      <MessageCircle size={12} className="text-sky-400" />
+                                    </div>
+                                    <span className="text-sm font-medium text-sky-300">
+                                      {reply.authorName || 'Course Coordinator'}
+                                    </span>
+                                    <span className="text-xs text-slate-500">
+                                      {formatTime(reply.createdAt)}
+                                    </span>
+                                  </div>
+                                  <p className="text-sm text-slate-300 pl-8">{reply.content}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })}
               </AnimatePresence>
             </div>
           )}

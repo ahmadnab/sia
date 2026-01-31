@@ -1503,5 +1503,326 @@ export const getCachedChatSummary = async (studentEmail) => {
   }
 };
 
+// ===================
+// ANNOUNCEMENTS
+// ===================
+
+// Subscribe to announcements (optionally filtered by cohort)
+export const subscribeToAnnouncements = (callback, cohortId = null) => {
+  if (!db) {
+    callback([]);
+    return () => {};
+  }
+  const announcementsRef = collection(db, 'announcements');
+  const q = query(announcementsRef, orderBy('createdAt', 'desc'));
+
+  return onSnapshot(q, (snapshot) => {
+    let announcements = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+
+    // Filter by cohort on client side (show global + cohort-specific)
+    if (cohortId) {
+      announcements = announcements.filter(a =>
+        !a.cohortId || a.cohortId === cohortId
+      );
+    }
+
+    // Only show published announcements for students
+    callback(announcements);
+  }, (error) => {
+    console.error('Announcements subscription error:', error);
+    callback([]);
+  });
+};
+
+// Create announcement
+export const createAnnouncement = async (announcementData) => {
+  if (!db) return null;
+  try {
+    const announcementsRef = collection(db, 'announcements');
+    const docRef = await addDoc(announcementsRef, {
+      title: announcementData.title,
+      content: announcementData.content,
+      cohortId: announcementData.cohortId || null, // null = all students
+      status: announcementData.status || 'published', // 'draft' or 'published'
+      priority: announcementData.priority || 'normal', // 'normal', 'important', 'urgent'
+      authorName: announcementData.authorName || 'Course Coordinator',
+      createdAt: serverTimestamp(),
+      publishedAt: announcementData.status === 'published' ? serverTimestamp() : null
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error creating announcement:', error);
+    return null;
+  }
+};
+
+// Update announcement
+export const updateAnnouncement = async (announcementId, updates) => {
+  if (!db) return false;
+  try {
+    const announcementRef = doc(db, 'announcements', announcementId);
+    const updateData = { ...updates };
+
+    // If publishing, set publishedAt
+    if (updates.status === 'published') {
+      updateData.publishedAt = serverTimestamp();
+    }
+
+    await updateDoc(announcementRef, updateData);
+    return true;
+  } catch (error) {
+    console.error('Error updating announcement:', error);
+    return false;
+  }
+};
+
+// Delete announcement
+export const deleteAnnouncement = async (announcementId) => {
+  if (!db) return false;
+  try {
+    const announcementRef = doc(db, 'announcements', announcementId);
+    await deleteDoc(announcementRef);
+    return true;
+  } catch (error) {
+    console.error('Error deleting announcement:', error);
+    return false;
+  }
+};
+
+// Mark announcement as read by student
+export const markAnnouncementRead = async (announcementId, studentEmail) => {
+  if (!db || !studentEmail) return false;
+  try {
+    const readRef = collection(db, 'announcement_reads');
+    await addDoc(readRef, {
+      announcementId,
+      studentEmail: studentEmail.toLowerCase(),
+      readAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error('Error marking announcement as read:', error);
+    return false;
+  }
+};
+
+// Get read status for announcements
+export const getAnnouncementReadStatus = async (studentEmail) => {
+  if (!db || !studentEmail) return {};
+  try {
+    const readRef = collection(db, 'announcement_reads');
+    const q = query(readRef, where('studentEmail', '==', studentEmail.toLowerCase()));
+    const snapshot = await getDocs(q);
+
+    const readStatus = {};
+    snapshot.docs.forEach(doc => {
+      readStatus[doc.data().announcementId] = true;
+    });
+    return readStatus;
+  } catch (error) {
+    console.error('Error getting read status:', error);
+    return {};
+  }
+};
+
+// ===================
+// ANONYMOUS WALL REPLIES
+// ===================
+
+// Add reply to wall post
+export const addWallPostReply = async (postId, replyData) => {
+  if (!db) return null;
+  try {
+    const repliesRef = collection(db, 'wall_replies');
+    const docRef = await addDoc(repliesRef, {
+      postId,
+      content: replyData.content,
+      authorName: replyData.authorName || 'Course Coordinator',
+      isPrivate: replyData.isPrivate || false, // Private replies only visible to poster
+      createdAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error adding wall reply:', error);
+    return null;
+  }
+};
+
+// Subscribe to replies for a post
+export const subscribeToWallReplies = (postId, callback) => {
+  if (!db) {
+    callback([]);
+    return () => {};
+  }
+  const repliesRef = collection(db, 'wall_replies');
+  const q = query(
+    repliesRef,
+    where('postId', '==', postId),
+    orderBy('createdAt', 'asc')
+  );
+
+  return onSnapshot(q, (snapshot) => {
+    const replies = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    callback(replies);
+  }, (error) => {
+    console.error('Wall replies subscription error:', error);
+    callback([]);
+  });
+};
+
+// Get all replies (for admin view)
+export const subscribeToAllWallReplies = (callback) => {
+  if (!db) {
+    callback([]);
+    return () => {};
+  }
+  const repliesRef = collection(db, 'wall_replies');
+  const q = query(repliesRef, orderBy('createdAt', 'desc'));
+
+  return onSnapshot(q, (snapshot) => {
+    const replies = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    callback(replies);
+  }, (error) => {
+    console.error('All wall replies subscription error:', error);
+    callback([]);
+  });
+};
+
+// Delete wall reply
+export const deleteWallReply = async (replyId) => {
+  if (!db) return false;
+  try {
+    const replyRef = doc(db, 'wall_replies', replyId);
+    await deleteDoc(replyRef);
+    return true;
+  } catch (error) {
+    console.error('Error deleting wall reply:', error);
+    return false;
+  }
+};
+
+// Update wall post to track if it has replies (for notification purposes)
+export const updateWallPostReplyCount = async (postId, increment = true) => {
+  if (!db) return false;
+  try {
+    const postRef = doc(db, 'anonymous_wall', postId);
+    // We'll just mark that it has replies
+    await updateDoc(postRef, {
+      hasReplies: true,
+      lastReplyAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error('Error updating post reply count:', error);
+    return false;
+  }
+};
+
+// ===================
+// DIRECT MESSAGES
+// ===================
+
+// Send a direct message from admin to student
+export const sendDirectMessage = async (studentEmail, messageData) => {
+  if (!db || !studentEmail) return null;
+  try {
+    const messagesRef = collection(db, 'direct_messages');
+    const docRef = await addDoc(messagesRef, {
+      studentEmail: studentEmail.toLowerCase(),
+      subject: messageData.subject,
+      content: messageData.content,
+      senderName: messageData.senderName || 'Course Coordinator',
+      isRead: false,
+      createdAt: serverTimestamp()
+    });
+    return docRef.id;
+  } catch (error) {
+    console.error('Error sending direct message:', error);
+    return null;
+  }
+};
+
+// Subscribe to direct messages for a student
+export const subscribeToDirectMessages = (studentEmail, callback) => {
+  if (!db || !studentEmail) {
+    callback([]);
+    return () => {};
+  }
+  const messagesRef = collection(db, 'direct_messages');
+  const q = query(
+    messagesRef,
+    where('studentEmail', '==', studentEmail.toLowerCase()),
+    orderBy('createdAt', 'desc')
+  );
+  return onSnapshot(q, (snapshot) => {
+    const messages = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    callback(messages);
+  }, (error) => {
+    console.error('Direct messages subscription error:', error);
+    callback([]);
+  });
+};
+
+// Subscribe to all direct messages (for admin view)
+export const subscribeToAllDirectMessages = (callback) => {
+  if (!db) {
+    callback([]);
+    return () => {};
+  }
+  const messagesRef = collection(db, 'direct_messages');
+  const q = query(messagesRef, orderBy('createdAt', 'desc'));
+  return onSnapshot(q, (snapshot) => {
+    const messages = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
+    }));
+    callback(messages);
+  }, (error) => {
+    console.error('All direct messages subscription error:', error);
+    callback([]);
+  });
+};
+
+// Mark a direct message as read
+export const markDirectMessageRead = async (messageId) => {
+  if (!db) return false;
+  try {
+    const messageRef = doc(db, 'direct_messages', messageId);
+    await updateDoc(messageRef, {
+      isRead: true,
+      readAt: serverTimestamp()
+    });
+    return true;
+  } catch (error) {
+    console.error('Error marking message as read:', error);
+    return false;
+  }
+};
+
+// Delete a direct message
+export const deleteDirectMessage = async (messageId) => {
+  if (!db) return false;
+  try {
+    const messageRef = doc(db, 'direct_messages', messageId);
+    await deleteDoc(messageRef);
+    return true;
+  } catch (error) {
+    console.error('Error deleting direct message:', error);
+    return false;
+  }
+};
+
 // Export Firestore instance for advanced usage
 export { db, auth };

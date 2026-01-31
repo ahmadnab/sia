@@ -249,7 +249,7 @@ const StudentChat = () => {
               </div>
               <div>
                 <h1 className="font-semibold lg:text-lg text-white">Sia</h1>
-                <p className="text-xs lg:text-sm text-slate-400">Your Academic Companion</p>
+                <p className="text-xs lg:text-sm text-slate-400 truncate max-w-[150px] sm:max-w-[200px]">{studentEmail}</p>
               </div>
             </div>
           </div>
@@ -447,7 +447,7 @@ const StudentChat = () => {
       </main>
 
       {/* Input */}
-      <footer className="bg-slate-800 border-t border-slate-700 p-4 lg:p-6">
+      <footer className="bg-slate-800 border-t border-slate-700 p-4 lg:p-6 safe-bottom">
         <div className="max-w-5xl mx-auto flex gap-3 lg:gap-4">
           <input
             ref={inputRef}
