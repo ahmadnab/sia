@@ -12,7 +12,7 @@ import {
   query,
   where,
   orderBy,
-  limit, // H12 FIX: Added for query limits
+  limit,
   onSnapshot,
   writeBatch,
   serverTimestamp,
@@ -71,13 +71,11 @@ export const onAuthChange = (callback) => {
   return onAuthStateChanged(auth, callback);
 };
 
-// M5 FIX: Email normalization helper for consistent email handling
 export const normalizeEmail = (email) => {
   if (!email || typeof email !== 'string') return '';
   return email.trim().toLowerCase();
 };
 
-// L8 FIX: Timestamp formatting utility for consistent date handling
 export const formatTimestamp = (timestamp, options = {}) => {
   if (!timestamp) return 'N/A';
 
@@ -342,7 +340,7 @@ export const createSurvey = async (surveyData) => {
       status: surveyData.status || 'Active', // 'Active', 'Draft', or 'Closed'
       createdAt: serverTimestamp(),
       publishedAt: isPublishing ? serverTimestamp() : null,
-      notificationsSentAt: isPublishing ? serverTimestamp() : null // Demo: simulated
+      notificationsSentAt: isPublishing ? serverTimestamp() : null
     });
     return docRef.id;
   } catch (error) {
@@ -370,7 +368,7 @@ export const publishSurvey = async (surveyId) => {
     await updateDoc(surveyRef, {
       status: 'Active',
       publishedAt: serverTimestamp(),
-      notificationsSentAt: serverTimestamp() // Demo: simulated notification
+      notificationsSentAt: serverTimestamp()
     });
     return true;
   } catch (error) {
@@ -577,7 +575,6 @@ export const createCohort = async (cohortData) => {
 
 // Get or create a persistent anonymous visitor ID (stored in localStorage)
 // This ID is used ONLY for vote tracking, NOT stored with responses
-// H4 FIX: Wrapped in try-catch to handle private browsing mode
 export const getVisitorId = () => {
   const VISITOR_ID_KEY = 'sia_visitor_id';
   try {
@@ -719,7 +716,6 @@ export const seedTestData = async () => {
   if (!db) return { success: false, message: 'Database not configured' };
 
   try {
-    // H13 FIX: Simple seeded random number generator (Linear Congruential Generator)
     // This ensures test data is deterministic and reproducible
     const createSeededRandom = (seed = 12345) => {
       let current = seed;
