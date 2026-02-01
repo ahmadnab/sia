@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Users, Calendar, Upload, X, Check, FileSpreadsheet, AlertCircle, Mail, ChevronDown, ChevronUp, UserPlus, Trash2, Download } from 'lucide-react';
+import { Plus, Users, Calendar, Upload, X, Check, FileSpreadsheet, AlertCircle, Mail, ChevronDown, ChevronUp, UserPlus, Trash2, Download, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Papa from 'papaparse';
 import AdminLayout from '../../components/AdminLayout';
@@ -469,81 +469,101 @@ Mike,Johnson,mike.johnson@example.edu,2.9,https://portfolio.com/mike,Senior`;
 
   return (
     <AdminLayout>
-      <div className="p-6 lg:p-8">
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Cohort Manager</h1>
-            <p className="text-slate-500 mt-1">Create cohorts and import students</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsUploadModalOpen(true)}
-              disabled={cohorts.length === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Upload size={18} />
-              Upload CSV
-            </button>
-            <button
-              onClick={() => setIsExportModalOpen(true)}
-              disabled={cohorts.length === 0 || students.length === 0}
-              className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <Download size={18} />
-              Export CSV
-            </button>
-            <button
-              onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors"
-            >
-              <Plus size={18} />
-              Create Cohort
-            </button>
+      <div className="p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-700 p-8 shadow-xl shadow-indigo-500/20">
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 blur-3xl rounded-full" />
+
+          <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 text-indigo-100 mb-2">
+                <Users size={16} className="text-amber-300" />
+                <span className="text-sm font-medium tracking-wide uppercase opacity-90">Academic Management</span>
+              </div>
+              <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">
+                Cohort Manager
+              </h1>
+              <p className="text-indigo-100/80 text-lg max-w-xl">
+                Create and manage student cohorts, import rosters, and track academic progress across different years.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => setIsUploadModalOpen(true)}
+                disabled={cohorts.length === 0}
+                className="flex items-center gap-2 px-4 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white rounded-xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Upload size={18} />
+                <span className="font-medium">Import CSV</span>
+              </button>
+
+              <button
+                onClick={() => setIsExportModalOpen(true)}
+                disabled={cohorts.length === 0 || students.length === 0}
+                className="flex items-center gap-2 px-4 py-3 bg-white/10 hover:bg-white/20 backdrop-blur-md border border-white/20 text-white rounded-xl transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Download size={18} />
+                <span className="font-medium">Export CSV</span>
+              </button>
+
+              <button
+                onClick={() => setIsModalOpen(true)}
+                className="flex items-center gap-2 px-5 py-3 bg-white text-indigo-600 hover:bg-indigo-50 font-bold rounded-xl shadow-lg shadow-black/10 transition-all active:scale-95"
+              >
+                <Plus size={18} />
+                <span>New Cohort</span>
+              </button>
+            </div>
           </div>
         </div>
 
         {/* Cohorts Grid */}
         {cohorts.length === 0 ? (
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-12 text-center shadow-sm">
-            <Users className="mx-auto text-slate-300 dark:text-slate-600 mb-4" size={48} />
-            <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">No cohorts yet</h3>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">Create your first cohort to get started.</p>
+          <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[300px]">
+            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800/50 rounded-full flex items-center justify-center mb-4">
+              <Users className="text-slate-400" size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">No cohorts yet</h3>
+            <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+              Get started by creating your first student cohort.
+            </p>
           </div>
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             {cohorts.map(cohort => (
-              <div key={cohort.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm w-full">
-                <div className="flex items-start justify-between mb-4">
+              <div key={cohort.id} className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group">
+                <div className="flex items-start justify-between mb-6">
                   <div>
-                    <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{cohort.name}</h3>
-                    <div className="flex items-center gap-1 text-sm text-slate-500 dark:text-slate-400 mt-1">
-                      <Calendar size={14} />
-                      <span>{cohort.year}</span>
+                    <h3 className="text-xl font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{cohort.name}</h3>
+                    <div className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400 mt-1">
+                      <Calendar size={14} className="text-indigo-500" />
+                      <span className="font-medium">{cohort.year}</span>
                     </div>
                   </div>
-                  <div className="w-10 h-10 bg-sky-100 rounded-lg flex items-center justify-center">
-                    <Users className="text-sky-500" size={20} />
+                  <div className="w-12 h-12 bg-indigo-50 dark:bg-indigo-500/10 rounded-xl flex items-center justify-center">
+                    <Users className="text-indigo-600 dark:text-indigo-400" size={24} />
                   </div>
                 </div>
 
                 {/* Import Status Message */}
                 {importStatus[cohort.id] && (
-                  <div className={`mb-4 p-3 rounded-lg text-sm ${importStatus[cohort.id].success
-                    ? 'bg-green-50 text-green-700 border border-green-200'
-                    : 'bg-red-50 text-red-700 border border-red-200'
+                  <div className={`mb-4 p-4 rounded-xl text-sm border ${importStatus[cohort.id].success
+                    ? 'bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 border-emerald-100 dark:border-emerald-800'
+                    : 'bg-rose-50 dark:bg-rose-900/20 text-rose-700 dark:text-rose-300 border-rose-100 dark:border-rose-800'
                     }`}>
-                    <div className="flex items-start gap-2">
+                    <div className="flex items-start gap-3">
                       {importStatus[cohort.id].success ? (
-                        <Check size={16} className="flex-shrink-0 mt-0.5" />
+                        <Check size={18} className="flex-shrink-0 mt-0.5" />
                       ) : (
-                        <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+                        <AlertCircle size={18} className="flex-shrink-0 mt-0.5" />
                       )}
                       <div className="flex-1">
-                        <p>{importStatus[cohort.id].message}</p>
+                        <p className="font-medium">{importStatus[cohort.id].message}</p>
                         {/* Show errors if any */}
                         {importStatus[cohort.id].errors?.length > 0 && (
-                          <ul className="mt-2 text-xs space-y-1">
+                          <ul className="mt-2 text-xs space-y-1 opacity-90">
                             {importStatus[cohort.id].errors.map((err, i) => (
                               <li key={i}>• {err}</li>
                             ))}
@@ -551,9 +571,9 @@ Mike,Johnson,mike.johnson@example.edu,2.9,https://portfolio.com/mike,Senior`;
                         )}
                         {/* Simulated email notification banner */}
                         {importStatus[cohort.id].success && importStatus[cohort.id].emailsSent && (
-                          <div className="mt-2 flex items-center gap-1 text-xs text-green-600 bg-green-100 px-2 py-1 rounded">
+                          <div className="mt-3 flex items-center gap-1.5 text-xs text-emerald-700 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-900/30 px-2 py-1.5 rounded-lg">
                             <Mail size={12} />
-                            <span>Demo: Welcome emails simulated for {importStatus[cohort.id].count} students</span>
+                            <span className="font-medium">Welcome emails sent to {importStatus[cohort.id].count} students</span>
                           </div>
                         )}
                       </div>
@@ -562,13 +582,13 @@ Mike,Johnson,mike.johnson@example.edu,2.9,https://portfolio.com/mike,Senior`;
                 )}
 
                 {/* Actions */}
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <button
                     onClick={() => handleOpenAddStudent(cohort.id)}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors text-sm"
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-indigo-500 to-indigo-600 hover:from-indigo-600 hover:to-indigo-700 text-white rounded-xl shadow-lg shadow-indigo-500/20 transition-all active:scale-95 text-sm font-medium"
                   >
                     <UserPlus size={16} />
-                    Add Student
+                    Add Student Manually
                   </button>
                 </div>
 
@@ -578,71 +598,69 @@ Mike,Johnson,mike.johnson@example.edu,2.9,https://portfolio.com/mike,Senior`;
                   const isExpanded = expandedCohorts.has(cohort.id);
 
                   return cohortStudents.length > 0 ? (
-                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                    <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
                       <button
                         onClick={() => toggleCohortExpansion(cohort.id)}
-                        className="flex items-center justify-between w-full text-left mb-3"
+                        className="flex items-center justify-between w-full text-left p-2 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors group/accordion"
                       >
-                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">
-                          Students ({cohortStudents.length})
+                        <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                          Enrolled Students ({cohortStudents.length})
                         </span>
                         {isExpanded ? (
-                          <ChevronUp size={16} className="text-slate-500 dark:text-slate-400" />
+                          <ChevronUp size={16} className="text-slate-400 group-hover/accordion:text-indigo-500 transition-colors" />
                         ) : (
-                          <ChevronDown size={16} className="text-slate-500 dark:text-slate-400" />
+                          <ChevronDown size={16} className="text-slate-400 group-hover/accordion:text-indigo-500 transition-colors" />
                         )}
                       </button>
 
-                      {isExpanded && (
-                        <div className="space-y-2 max-h-64 overflow-y-auto">
-                          {cohortStudents.map(student => (
-                            <div
-                              key={student.id}
-                              className="flex items-center justify-between p-2 bg-slate-50 dark:bg-slate-700/50 rounded-lg text-sm"
-                            >
-                              <div className="flex-1 min-w-0">
-                                <p className="font-medium text-slate-900 dark:text-slate-100 truncate">
-                                  {student.name}
-                                </p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
-                                  {student.email}
-                                </p>
-                              </div>
-                              <div className="flex items-center gap-2 ml-2">
-                                {student.gpa !== null && (
-                                  <span className="text-xs text-slate-600 dark:text-slate-300">
-                                    GPA: {student.gpa.toFixed(1)}
-                                  </span>
-                                )}
-                                {student.riskLevel && student.riskLevel !== 'unknown' && (
-                                  <span
-                                    className={`px-2 py-0.5 text-xs font-medium rounded-full ${student.riskLevel === 'high'
-                                      ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                                      : student.riskLevel === 'medium'
-                                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                                        : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                      }`}
-                                  >
-                                    {student.riskLevel}
-                                  </span>
-                                )}
-                                <button
-                                  onClick={() => handleDeleteStudent(student.id, student.name)}
-                                  className="p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
-                                  title="Remove student"
+                      <AnimatePresence>
+                        {isExpanded && (
+                          <motion.div
+                            initial={{ height: 0, opacity: 0 }}
+                            animate={{ height: 'auto', opacity: 1 }}
+                            exit={{ height: 0, opacity: 0 }}
+                            className="overflow-hidden"
+                          >
+                            <div className="space-y-2 mt-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar">
+                              {cohortStudents.map(student => (
+                                <div
+                                  key={student.id}
+                                  className="flex items-center justify-between p-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-lg text-sm border border-slate-100 dark:border-slate-800 hover:border-indigo-200 dark:hover:border-indigo-800/30 transition-colors"
                                 >
-                                  <Trash2 size={14} className="text-red-600 dark:text-red-400" />
-                                </button>
-                              </div>
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-slate-900 dark:text-slate-100 truncate">
+                                      {student.name}
+                                    </p>
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 truncate">
+                                      {student.email}
+                                    </p>
+                                  </div>
+                                  <div className="flex items-center gap-2 ml-2">
+                                    {student.gpa !== null && (
+                                      <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${student.gpa >= 3.0 ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' : 'bg-amber-100 text-amber-700'
+                                        }`}>
+                                        {student.gpa.toFixed(1)} CPA
+                                      </span>
+                                    )}
+                                    <button
+                                      onClick={() => handleDeleteStudent(student.id, student.name)}
+                                      className="p-1.5 hover:bg-rose-100 dark:hover:bg-rose-900/30 rounded-md transition-colors group/delete"
+                                      title="Remove student"
+                                    >
+                                      <Trash2 size={14} className="text-slate-400 group-hover/delete:text-rose-500 transition-colors" />
+                                    </button>
+                                  </div>
+                                </div>
+                              ))}
                             </div>
-                          ))}
-                        </div>
-                      )}
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
                     </div>
                   ) : (
-                    <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                      <p className="text-xs text-slate-500 dark:text-slate-400 italic text-center">
-                        No students in this cohort yet
+                    <div className="mt-6 pt-4 border-t border-slate-200 dark:border-slate-800">
+                      <p className="text-xs text-slate-400 italic text-center py-2">
+                        No students enrolled yet
                       </p>
                     </div>
                   );
@@ -667,7 +685,7 @@ Mike,Johnson,mike.johnson@example.edu,2.9,https://portfolio.com/mike,Senior`;
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md"
+                className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-2xl w-full max-w-md"
               >
                 {/* Modal Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
@@ -748,7 +766,7 @@ Mike,Johnson,mike.johnson@example.edu,2.9,https://portfolio.com/mike,Senior`;
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md max-h-[90vh] overflow-y-auto"
+                className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
               >
                 {/* Modal Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
@@ -883,7 +901,7 @@ Mike,Johnson,mike.johnson@example.edu,2.9,https://portfolio.com/mike,Senior`;
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md"
+                className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-2xl w-full max-w-md"
               >
                 <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
                   <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Upload Student CSV</h2>
@@ -1020,7 +1038,7 @@ Mike,Johnson,mike.johnson@example.edu,2.9,https://portfolio.com/mike,Senior`;
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md"
+                className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-2xl w-full max-w-md"
               >
                 <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
                   <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Export Cohort Data</h2>

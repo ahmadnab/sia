@@ -1,11 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Send, Bot, User, AlertTriangle, Trash2, History, X } from 'lucide-react';
+import { ArrowLeft, Send, Bot, User, AlertTriangle, Trash2, History, X, Users } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useApp } from '../../context/AppContext';
 import { chatWithSia } from '../../services/gemini';
 import { subscribeToChatHistory, saveChatMessage, clearChatHistory } from '../../services/firebase';
 import LoadingSpinner from '../../components/LoadingSpinner';
+import ThemeToggle from '../../components/ThemeToggle';
 import { renderMarkdown } from '../../utils/markdown';
 
 // Email validation regex - standard format check
@@ -267,6 +268,17 @@ const StudentChat = () => {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <Link
+              to="/admin"
+              className="group p-2 hover:px-3 flex items-center gap-0 hover:gap-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-800 rounded-lg transition-all hover:scale-105 active:scale-95 hidden sm:flex items-center justify-center"
+              title="Switch to Admin"
+            >
+              <Users size={20} />
+              <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap text-sm font-medium opacity-0 group-hover:opacity-100">
+                Switch to Admin
+              </span>
+            </Link>
+            <ThemeToggle variant="icon" />
             <button
               onClick={() => setShowHistoryPanel(!showHistoryPanel)}
               className="p-2 hover:bg-slate-700 rounded-lg transition-colors"
@@ -285,11 +297,11 @@ const StudentChat = () => {
               <Trash2 size={18} className="text-slate-400" aria-hidden="true" />
             </button>
           </div>
-        </div>
-      </header>
+        </div >
+      </header >
 
       {/* Chat History Panel */}
-      <AnimatePresence>
+      < AnimatePresence >
         {showHistoryPanel && (
           <>
             {/* Backdrop */}
@@ -380,10 +392,10 @@ const StudentChat = () => {
             </motion.div>
           </>
         )}
-      </AnimatePresence>
+      </AnimatePresence >
 
       {/* Messages */}
-      <main className="flex-1 overflow-y-auto p-4 lg:p-6 dark-scrollbar">
+      < main className="flex-1 overflow-y-auto p-4 lg:p-6 dark-scrollbar" >
         <div className="max-w-5xl mx-auto space-y-4 lg:space-y-5">
           {isLoadingHistory ? (
             <div className="flex items-center justify-center h-full">
@@ -454,10 +466,10 @@ const StudentChat = () => {
 
           <div ref={messagesEndRef} />
         </div>
-      </main>
+      </main >
 
       {/* Input */}
-      <footer className="bg-slate-800 border-t border-slate-700 p-4 lg:p-6 safe-bottom">
+      < footer className="bg-slate-800 border-t border-slate-700 p-4 lg:p-6 safe-bottom" >
         <div className="max-w-5xl mx-auto flex gap-3 lg:gap-4">
           <input
             ref={inputRef}
@@ -472,14 +484,14 @@ const StudentChat = () => {
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="w-12 h-12 lg:w-14 lg:h-14 bg-sky-500 hover:bg-sky-600 disabled:bg-slate-700 disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-colors"
+            className="w-12 h-12 lg:w-14 lg:h-14 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:from-slate-700 disabled:to-slate-700 disabled:cursor-not-allowed rounded-full flex items-center justify-center transition-all shadow-lg shadow-sky-500/20 active:scale-95"
             aria-label="Send message"
           >
             <Send size={20} className="text-white lg:w-6 lg:h-6" aria-hidden="true" />
           </button>
         </div>
-      </footer>
-    </div>
+      </footer >
+    </div >
   );
 };
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { TrendingUp, TrendingDown, Users, MessageSquare, AlertTriangle, RefreshCw, Activity, Clock, PieChart as PieChartIcon, HelpCircle, X, Database, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { TrendingUp, TrendingDown, Users, MessageSquare, AlertTriangle, RefreshCw, Activity, Clock, PieChart as PieChartIcon, HelpCircle, X, Database, Trash2, ChevronDown, ChevronUp, Sparkles, Calendar } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, BarChart, Bar } from 'recharts';
 import AdminLayout from '../../components/AdminLayout';
 import { subscribeToResponses, subscribeToStudents, subscribeToSurveys, subscribeToSurveyStatus, getVoteCountsBySurvey, seedTestData, clearTestData, subscribeToSummaryCache, saveSummaryCache } from '../../services/firebase';
@@ -286,9 +286,9 @@ const AdminDashboard = () => {
 
   // Risk distribution chart data
   const riskDistributionData = [
-    { name: 'High', value: riskMetrics.highRiskCount, color: '#EF4444' },
-    { name: 'Medium', value: riskMetrics.mediumRiskCount, color: '#F59E0B' },
-    { name: 'Low', value: riskMetrics.lowRiskCount, color: '#22C55E' },
+    { name: 'High', value: riskMetrics.highRiskCount, color: '#F43F5E' },
+    { name: 'Medium', value: riskMetrics.mediumRiskCount, color: '#F97316' },
+    { name: 'Low', value: riskMetrics.lowRiskCount, color: '#10B981' },
     { name: 'Unknown', value: riskMetrics.unknownRiskCount, color: '#94A3B8' },
   ].filter(d => d.value > 0);
 
@@ -354,7 +354,7 @@ const AdminDashboard = () => {
   const atRiskStudents = riskMetrics.highRiskCount;
 
   // Sentiment gauge data
-  const sentimentColor = avgSentiment >= 70 ? '#22C55E' : avgSentiment >= 40 ? '#F59E0B' : '#EF4444';
+  const sentimentColor = avgSentiment >= 70 ? '#10B981' : avgSentiment >= 40 ? '#F59E0B' : '#F43F5E';
   const gaugeData = [
     { name: 'Score', value: avgSentiment },
     { name: 'Remaining', value: 100 - avgSentiment }
@@ -367,11 +367,11 @@ const AdminDashboard = () => {
   // Calculate sentiment distribution (histogram data)
   const sentimentDistribution = useMemo(() => {
     const buckets = [
-      { range: '0-20', min: 0, max: 20, count: 0, label: 'Very Low', color: '#EF4444' },
+      { range: '0-20', min: 0, max: 20, count: 0, label: 'Very Low', color: '#F43F5E' },
       { range: '21-40', min: 21, max: 40, count: 0, label: 'Low', color: '#F97316' },
       { range: '41-60', min: 41, max: 60, count: 0, label: 'Neutral', color: '#F59E0B' },
       { range: '61-80', min: 61, max: 80, count: 0, label: 'Good', color: '#84CC16' },
-      { range: '81-100', min: 81, max: 100, count: 0, label: 'Excellent', color: '#22C55E' },
+      { range: '81-100', min: 81, max: 100, count: 0, label: 'Excellent', color: '#10B981' },
     ];
 
     responses.forEach(r => {
@@ -427,15 +427,13 @@ const AdminDashboard = () => {
   const themeSentiments = useMemo(() => {
     if (!summary?.themeSentiments || summary.themeSentiments.length === 0) {
       // Fallback: create from themes if themeSentiments not available
-      // Use deterministic values based on index (no Math.random in useMemo)
       if (summary?.themes && summary.themes.length > 0) {
         return summary.themes.map((theme, idx) => {
-          // Create deterministic variance based on index
-          const variance = ((idx % 5) - 2) * 10; // -20, -10, 0, 10, 20
+          const variance = ((idx % 5) - 2) * 10;
           return {
             theme: theme,
             sentiment: Math.max(20, Math.min(80, avgSentiment + variance)),
-            mentions: (idx % 7) + 3 // 3-9 mentions, deterministic
+            mentions: (idx % 7) + 3
           };
         });
       }
@@ -481,28 +479,65 @@ const AdminDashboard = () => {
     return result;
   }, [responses]);
 
+  // Glass Card Component
+  const GlassCard = ({ children, className = "", onClick, ...props }) => (
+    <div
+      onClick={onClick}
+      className={`relative bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-sm hover:shadow-md transition-all duration-300 ${className}`}
+      {...props}
+    >
+      {/* Subtle top highlight */}
+      <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/50 dark:via-white/10 to-transparent opacity-50" />
+      {children}
+    </div>
+  );
+
   return (
     <AdminLayout>
-      <div className="p-6 lg:p-8">
-        {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Dashboard</h1>
-          <p className="text-slate-500 dark:text-slate-400 mt-1">Real-time insights from your students</p>
+      <div className="p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
+        {/* Welcome Hero Section */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-700 p-8 md:p-12 shadow-xl shadow-indigo-500/20">
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 blur-3xl rounded-full" />
+          <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-purple-500/20 blur-3xl rounded-full" />
+
+          <div className="relative z-10 flex flex-col md:flex-row items-start md:items-end justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 text-indigo-100 mb-2">
+                <Sparkles size={16} className="text-amber-300" />
+                <span className="text-sm font-medium tracking-wide uppercase opacity-90">Admin Dashboard</span>
+              </div>
+              <h1 className="text-3xl md:text-5xl font-bold text-white mb-2 tracking-tight">
+                Welcome back, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-200 to-white">Coordinator</span>
+              </h1>
+              <p className="text-indigo-100/80 text-lg max-w-xl">
+                Here's what's happening in your student community today. You have {responses.length} total responses across {surveys.length} surveys.
+              </p>
+            </div>
+
+            <div className="flex flex-col items-end gap-1 text-white/90">
+              <div className="flex items-center gap-2 bg-white/10 backdrop-blur-md px-4 py-2 rounded-xl border border-white/10">
+                <Calendar size={18} />
+                <span className="font-medium">{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</span>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Primary Metric Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        {/* Primary Metric Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {/* Sentiment Score */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Avg. Sentiment</h3>
-              <div className={`flex items-center gap-1 text-sm ${avgSentiment >= 50 ? 'text-green-500' : 'text-red-500'}`}>
+          <GlassCard className="p-6 group">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Avg. Sentiment</h3>
+              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full text-sm font-bold shadow-sm ${avgSentiment >= 50 ? 'bg-green-100 dark:bg-green-500/20 text-green-600 dark:text-green-400' : 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400'
+                }`}>
                 {avgSentiment >= 50 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                 <span>{avgSentiment >= 50 ? '+' : ''}{(avgSentiment - 50).toFixed(0)}%</span>
               </div>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="w-24 h-24">
+            <div className="flex items-end gap-5">
+              <div className="relative w-28 h-28 shrink-0">
                 {isChartReady && (
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
@@ -510,466 +545,406 @@ const AdminDashboard = () => {
                         data={gaugeData}
                         cx="50%"
                         cy="50%"
-                        innerRadius={30}
-                        outerRadius={40}
+                        innerRadius={38}
+                        outerRadius={50}
                         startAngle={90}
                         endAngle={-270}
                         dataKey="value"
+                        className="drop-shadow-sm"
                       >
-                        <Cell fill={sentimentColor} />
-                        <Cell fill="#E2E8F0" className="dark:fill-slate-700" />
+                        <Cell fill={sentimentColor} stroke="none" />
+                        <Cell fill={resolvedTheme === 'dark' ? '#1E293B' : '#E2E8F0'} stroke="none" />
                       </Pie>
                     </PieChart>
                   </ResponsiveContainer>
                 )}
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                  <span className="text-3xl font-bold text-slate-900 dark:text-white">{avgSentiment}</span>
+                </div>
               </div>
-              <div>
-                <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{avgSentiment}</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">out of 100</p>
+              <div className="pb-2">
+                <p className="text-sm text-slate-600 dark:text-slate-300 font-medium">Platform Health Score</p>
+                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Based on student feedback sentiment analysis</p>
               </div>
             </div>
-          </div>
+          </GlassCard>
 
           {/* Response Count */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+          <GlassCard className="p-6 flex flex-col justify-between group">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Total Responses</h3>
-              <MessageSquare className="text-sky-500" size={20} />
+              <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Feedback</h3>
+              <div className="w-10 h-10 rounded-xl bg-sky-100 dark:bg-sky-500/20 flex items-center justify-center text-sky-600 dark:text-sky-400 group-hover:scale-110 transition-transform duration-300">
+                <MessageSquare size={20} />
+              </div>
             </div>
-            <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{responseCount}</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Anonymous submissions</p>
-          </div>
+            <div>
+              <p className="text-5xl font-bold text-slate-900 dark:text-white tracking-tight mb-2">
+                {responseCount}
+              </p>
+              <div className="flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                <span className="px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 font-medium text-slate-700 dark:text-slate-300">
+                  +{recentEngagement.last7Days}
+                </span>
+                <span>new this week</span>
+              </div>
+            </div>
+          </GlassCard>
 
           {/* At-Risk Students */}
           <button
             onClick={() => setShowNeedsAttentionModal(true)}
-            className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow text-left w-full focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2"
-            type="button"
-            aria-label="View at-risk students"
+            className="text-left w-full focus:outline-none"
           >
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Needs Attention</h3>
-              <AlertTriangle className="text-amber-500" size={20} />
-            </div>
-            <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{atRiskStudents}</p>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Students at risk • Click to view</p>
-          </button>
-        </div>
-
-        {/* Secondary Metric Cards - Engagement & Risk */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          {/* Response Rate */}
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setShowResponseRateModal(true);
-            }}
-            onMouseDown={(e) => e.preventDefault()}
-            className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow text-left w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-            type="button"
-            aria-label="View Response Rate Details"
-          >
-            <div className="flex items-center justify-between mb-4 pointer-events-none">
-              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Avg. Response Rate</h3>
-              <Activity className="text-teal-500" size={20} />
-            </div>
-            <div className="flex items-baseline gap-2 pointer-events-none">
-              <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{engagementMetrics.avgResponseRate}%</p>
-              {engagementMetrics.activeSurveyCount > 0 && (
-                <span className="text-sm text-slate-500 dark:text-slate-400">
-                  across {engagementMetrics.activeSurveyCount} active survey{engagementMetrics.activeSurveyCount !== 1 ? 's' : ''}
-                </span>
-              )}
-            </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 pointer-events-none">
-              {engagementMetrics.activeSurveyCount === 0
-                ? 'No active surveys'
-                : 'Votes / Eligible students'}
-            </p>
-          </button>
-
-          {/* Recent Engagement */}
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setShowRecentActivityModal(true);
-            }}
-            onMouseDown={(e) => e.preventDefault()}
-            className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow text-left w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-            type="button"
-            aria-label="View Recent Activity Details"
-          >
-            <div className="flex items-center justify-between mb-4 pointer-events-none">
-              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Recent Activity</h3>
-              <Clock className="text-purple-500" size={20} />
-            </div>
-            <div className="flex items-baseline gap-2 pointer-events-none">
-              <p className="text-3xl font-bold text-slate-900 dark:text-slate-100">{recentEngagement.last7Days}</p>
-              <div className={`flex items-center gap-1 text-sm ${recentEngagement.delta >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                {recentEngagement.delta >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                <span>{recentEngagement.delta >= 0 ? '+' : ''}{recentEngagement.delta}%</span>
-              </div>
-            </div>
-            <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 pointer-events-none">
-              Responses in last 7 days (vs prior week)
-            </p>
-          </button>
-
-          {/* Risk Distribution */}
-          <button
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setShowRiskDistributionModal(true);
-            }}
-            onMouseDown={(e) => e.preventDefault()}
-            className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm cursor-pointer hover:shadow-md transition-shadow text-left w-full focus:outline-none focus:ring-2 focus:ring-sky-500 focus:ring-offset-2"
-            type="button"
-            aria-label="View Risk Distribution Details"
-          >
-            <div className="flex items-center justify-between mb-4 pointer-events-none">
-              <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide">Risk Distribution</h3>
-              <PieChartIcon className="text-rose-500" size={20} />
-            </div>
-            <div className="flex items-center gap-4 pointer-events-none">
-              <div className="w-16 h-16 pointer-events-none">
-                {riskDistributionData.length > 0 && isChartReady ? (
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={riskDistributionData}
-                        cx="50%"
-                        cy="50%"
-                        innerRadius={18}
-                        outerRadius={30}
-                        dataKey="value"
-                      >
-                        {riskDistributionData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                    </PieChart>
-                  </ResponsiveContainer>
+            <GlassCard className={`p-6 h-full flex flex-col justify-between border-l-4 hover:translate-y-[-2px] ${atRiskStudents > 0 ? 'border-l-rose-500' : 'border-l-emerald-500'
+              }`}>
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Risk Radar</h3>
+                {atRiskStudents > 0 ? (
+                  <div className="animate-pulse">
+                    <AlertTriangle className="text-rose-500" size={24} />
+                  </div>
                 ) : (
-                  <div className="w-full h-full bg-slate-100 dark:bg-slate-700 rounded-full flex items-center justify-center pointer-events-none">
-                    <Users className="text-slate-400 dark:text-slate-500" size={20} />
+                  <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+                    <Sparkles size={20} />
                   </div>
                 )}
               </div>
-              <div className="flex-1 pointer-events-none">
-                <div className="flex items-baseline gap-2 pointer-events-none">
-                  <p className="text-2xl font-bold text-red-600 dark:text-red-400 pointer-events-none">{riskMetrics.highRiskPercent}%</p>
-                  <span className="text-sm text-slate-500 dark:text-slate-400 pointer-events-none">high risk</span>
-                </div>
-                <div className="flex gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400 pointer-events-none">
-                  <span className="flex items-center gap-1 pointer-events-none">
-                    <span className="w-2 h-2 rounded-full bg-red-500 pointer-events-none"></span>
-                    {riskMetrics.highRiskCount}
-                  </span>
-                  <span className="flex items-center gap-1 pointer-events-none">
-                    <span className="w-2 h-2 rounded-full bg-amber-500 pointer-events-none"></span>
-                    {riskMetrics.mediumRiskCount}
-                  </span>
-                  <span className="flex items-center gap-1 pointer-events-none">
-                    <span className="w-2 h-2 rounded-full bg-green-500 pointer-events-none"></span>
-                    {riskMetrics.lowRiskCount}
-                  </span>
-                  {riskMetrics.unknownRiskCount > 0 && (
-                    <span className="flex items-center gap-1 pointer-events-none" title="No GPA data">
-                      <HelpCircle size={12} className="text-slate-400 dark:text-slate-500 pointer-events-none" />
-                      {riskMetrics.unknownRiskCount}
-                    </span>
-                  )}
+              <div>
+                <p className={`text-5xl font-bold tracking-tight mb-2 ${atRiskStudents > 0 ? 'text-rose-600 dark:text-rose-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                  {atRiskStudents}
+                </p>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm text-slate-500 dark:text-slate-400">
+                    Students requiring attention
+                  </p>
+                  <span className="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">View Details →</span>
                 </div>
               </div>
-            </div>
+            </GlassCard>
           </button>
         </div>
 
-        {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
-          {/* Trend Chart */}
-          <div className="lg:col-span-2 bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Sentiment Trend</h3>
-              {/* Week-over-Week Delta Badge */}
+        {/* Action Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <button onClick={() => setShowResponseRateModal(true)} className="text-left group focus:outline-none">
+            <GlassCard className="p-5 h-full flex items-center justify-between border-slate-200 dark:border-slate-800 hover:border-teal-300 dark:hover:border-teal-700 transition-colors">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="p-2 rounded-lg bg-teal-50 dark:bg-teal-500/10 text-teal-600 dark:text-teal-400">
+                    <Activity size={18} />
+                  </div>
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">Response Rates</span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 pl-1">Avg. Survey Engagement</p>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-bold text-teal-600 dark:text-teal-400">{engagementMetrics.avgResponseRate}%</span>
+              </div>
+            </GlassCard>
+          </button>
+
+          <button onClick={() => setShowRecentActivityModal(true)} className="text-left group focus:outline-none">
+            <GlassCard className="p-5 h-full flex items-center justify-between border-slate-200 dark:border-slate-800 hover:border-purple-300 dark:hover:border-purple-700 transition-colors">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400">
+                    <Clock size={18} />
+                  </div>
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">Recent Activity</span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 pl-1">New responses this week</p>
+              </div>
+              <div className="text-right">
+                <span className="text-2xl font-bold text-purple-600 dark:text-purple-400">{recentEngagement.last7Days}</span>
+              </div>
+            </GlassCard>
+          </button>
+
+          <button onClick={() => setShowRiskDistributionModal(true)} className="text-left group focus:outline-none">
+            <GlassCard className="p-5 h-full flex items-center justify-between border-slate-200 dark:border-slate-800 hover:border-rose-300 dark:hover:border-rose-700 transition-colors">
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <div className="p-2 rounded-lg bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400">
+                    <PieChartIcon size={18} />
+                  </div>
+                  <span className="font-semibold text-slate-700 dark:text-slate-200">Risk Distribution</span>
+                </div>
+                <p className="text-xs text-slate-500 dark:text-slate-400 pl-1">High / Med / Low</p>
+              </div>
+              <div className="flex gap-1">
+                <div className="flex flex-col items-center px-2 border-r border-slate-100 dark:border-slate-800">
+                  <span className="text-sm font-bold text-rose-500">{riskMetrics.highRiskCount}</span>
+                  <span className="text-[10px] text-slate-400">High</span>
+                </div>
+                <div className="flex flex-col items-center px-2">
+                  <span className="text-sm font-bold text-amber-500">{riskMetrics.mediumRiskCount}</span>
+                  <span className="text-[10px] text-slate-400">Med</span>
+                </div>
+              </div>
+            </GlassCard>
+          </button>
+        </div>
+
+        {/* Secondary Metrics & Graphs */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main Chart Area */}
+          <GlassCard className="lg:col-span-2 p-6 md:p-8">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">Sentiment Trends</h3>
+                <p className="text-sm text-slate-500 dark:text-slate-400">7-day moving average</p>
+              </div>
               {sentimentWoW.delta !== null && (
-                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${sentimentWoW.delta >= 0
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                    : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                <div className={`flex items-center gap-2 px-4 py-2 rounded-2xl text-sm font-semibold backdrop-blur-md ${sentimentWoW.delta >= 0
+                  ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
+                  : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
                   }`}>
-                  {sentimentWoW.delta >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                  {sentimentWoW.delta >= 0 ? <TrendingUp size={16} /> : <TrendingDown size={16} />}
                   <span>{sentimentWoW.delta >= 0 ? '+' : ''}{sentimentWoW.delta}% vs last week</span>
                 </div>
               )}
             </div>
-            <div className="h-48">
+
+            <div className="h-64 mb-8">
               {isChartReady && (
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={trendData.filter(d => d.sentiment !== null)}>
                     <defs>
                       <linearGradient id="sentimentGradient" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#0EA5E9" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#0EA5E9" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
                       </linearGradient>
                     </defs>
                     <XAxis
                       dataKey="day"
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: '#94A3B8', fontSize: 12 }}
-                      className="dark:[&>text]:fill-slate-400"
+                      tick={{ fill: '#94A3B8', fontSize: 12, fontWeight: 500 }}
+                      dy={10}
                     />
                     <YAxis
                       domain={[0, 100]}
                       axisLine={false}
                       tickLine={false}
-                      tick={{ fill: '#94A3B8', fontSize: 12 }}
-                      className="dark:[&>text]:fill-slate-400"
+                      tick={{ fill: '#94A3B8', fontSize: 12, fontWeight: 500 }}
                     />
                     <Tooltip
                       contentStyle={{
-                        backgroundColor: resolvedTheme === 'dark' ? '#1E293B' : '#ffffff',
-                        border: resolvedTheme === 'dark' ? 'none' : '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        color: resolvedTheme === 'dark' ? '#F1F5F9' : '#0f172a'
+                        backgroundColor: resolvedTheme === 'dark' ? 'rgba(30, 41, 59, 0.8)' : 'rgba(255, 255, 255, 0.8)',
+                        backdropFilter: 'blur(8px)',
+                        border: 'none',
+                        borderRadius: '16px', // Rounded tooltip
+                        color: resolvedTheme === 'dark' ? '#F1F5F9' : '#0f172a',
+                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)'
                       }}
-                      formatter={(value, name) => [value, name === 'sentiment' ? 'Sentiment Score' : name]}
-                      labelFormatter={(label) => `${label}`}
+                      itemStyle={{ color: '#6366f1', fontWeight: 600 }}
+                      formatter={(value) => [`${value}/100`, 'Sentiment Score']}
+                      labelStyle={{ opacity: 0.7, marginBottom: '0.25rem' }}
                     />
                     <Area
                       type="monotone"
                       dataKey="sentiment"
-                      stroke="#0EA5E9"
-                      strokeWidth={2}
+                      stroke="#6366f1"
+                      strokeWidth={3}
                       fill="url(#sentimentGradient)"
-                      connectNulls
+                      activeDot={{ r: 6, strokeWidth: 0, fill: '#6366f1' }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               )}
             </div>
-            {trendData.filter(d => d.sentiment !== null).length === 0 && (
-              <div className="flex items-center justify-center h-48 text-slate-400 dark:text-slate-500 text-sm">
-                No sentiment data available for the past 7 days
-              </div>
-            )}
 
-            {/* Sentiment Distribution & Theme Breakdown */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6 pt-6 border-t border-slate-200 dark:border-slate-700">
-              {/* Sentiment Distribution Histogram */}
+            {/* Distribution & Themes Split */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 border-t border-slate-200/50 dark:border-slate-800/50 pt-8">
+              {/* Distribution */}
               <div>
-                <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Score Distribution</h4>
-                {responses.filter(r => r.sentimentScore != null).length > 0 ? (
-                  <div className="h-32">
-                    {isChartReady && (
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={sentimentDistribution} barCategoryGap="15%">
-                          <XAxis
-                            dataKey="range"
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: '#94A3B8', fontSize: 10 }}
-                          />
-                          <YAxis
-                            axisLine={false}
-                            tickLine={false}
-                            tick={{ fill: '#94A3B8', fontSize: 10 }}
-                            allowDecimals={false}
-                          />
-                          <Tooltip
-                            cursor={false}
-                            contentStyle={{
-                              backgroundColor: resolvedTheme === 'dark' ? '#1E293B' : '#ffffff',
-                              border: resolvedTheme === 'dark' ? '1px solid #334155' : '1px solid #e2e8f0',
-                              borderRadius: '8px',
-                              fontSize: '12px',
-                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                            }}
-                            labelStyle={{
-                              color: resolvedTheme === 'dark' ? '#F1F5F9' : '#0f172a',
-                              fontWeight: 600,
-                              marginBottom: '4px'
-                            }}
-                            itemStyle={{
-                              color: resolvedTheme === 'dark' ? '#CBD5E1' : '#475569'
-                            }}
-                            formatter={(value, name, props) => [
-                              `${value} responses`,
-                              props.payload.label
-                            ]}
-                          />
-                          <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                            {sentimentDistribution.map((entry, index) => (
-                              <Cell key={`cell-${index}`} fill={entry.color} />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    )}
-                  </div>
-                ) : (
-                  <div className="h-32 flex items-center justify-center text-slate-400 dark:text-slate-500 text-sm">
-                    No response data yet
-                  </div>
-                )}
-                <div className="flex justify-center gap-3 mt-2 flex-wrap">
-                  {sentimentDistribution.map((bucket, idx) => (
-                    <div key={idx} className="flex items-center gap-1 text-xs text-slate-500 dark:text-slate-400">
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: bucket.color }}></span>
-                      <span>{bucket.label}</span>
-                    </div>
-                  ))}
+                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Score Distribution</h4>
+                <div className="h-40">
+                  {isChartReady && (
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart data={sentimentDistribution} barCategoryGap="20%">
+                        <XAxis dataKey="range" axisLine={false} tickLine={false} tick={{ fill: '#94A3B8', fontSize: 10 }} />
+                        <Tooltip
+                          cursor={{ fill: 'transparent' }}
+                          contentStyle={{
+                            backgroundColor: resolvedTheme === 'dark' ? '#1E293B' : '#fff',
+                            borderRadius: '12px',
+                            border: 'none',
+                            boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
+                          }}
+                        />
+                        <Bar dataKey="count" radius={[6, 6, 6, 6]} overflow="visible">
+                          {sentimentDistribution.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  )}
                 </div>
               </div>
 
-              {/* Theme Sentiment Matrix */}
+              {/* Themes */}
               <div>
-                <h4 className="text-sm font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Theme Breakdown</h4>
-                {themeSentiments.length > 0 ? (
-                  <div className="space-y-2.5">
-                    {themeSentiments.slice(0, 5).map((item, idx) => {
-                      const barColor = item.sentiment >= 70 ? '#22C55E' : item.sentiment >= 40 ? '#F59E0B' : '#EF4444';
-                      return (
-                        <div key={idx} className="group">
-                          <div className="flex items-center justify-between mb-1">
-                            <div className="relative max-w-[60%]">
-                              <span className="text-sm text-slate-700 dark:text-slate-300 truncate block">
-                                {item.theme}
-                              </span>
-                              {/* Tooltip on hover */}
-                              <div className="absolute left-0 bottom-full mb-2 px-3 py-2 bg-slate-900 dark:bg-slate-700 text-white text-xs rounded-lg shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 whitespace-nowrap max-w-xs">
-                                {item.theme}
-                                <div className="absolute left-4 top-full w-0 h-0 border-l-4 border-r-4 border-t-4 border-transparent border-t-slate-900 dark:border-t-slate-700"></div>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {item.mentions && (
-                                <span className="text-xs text-slate-400 dark:text-slate-500">
-                                  {item.mentions} mentions
-                                </span>
-                              )}
-                              <span className="text-sm font-semibold" style={{ color: barColor }}>
-                                {Math.round(item.sentiment)}
-                              </span>
-                            </div>
-                          </div>
-                          <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div
-                              className="h-full rounded-full transition-all duration-500"
-                              style={{
-                                width: `${item.sentiment}%`,
-                                backgroundColor: barColor
-                              }}
-                            />
-                          </div>
+                <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-4">Top Themes</h4>
+                <div className="space-y-4">
+                  {themeSentiments.slice(0, 4).map((item, idx) => {
+                    const barColor = item.sentiment >= 70 ? '#10B981' : item.sentiment >= 40 ? '#F59E0B' : '#F43F5E';
+                    return (
+                      <div key={idx}>
+                        <div className="flex justify-between text-sm mb-1.5 font-medium">
+                          <span className="text-slate-700 dark:text-slate-200">{item.theme}</span>
+                          <span style={{ color: barColor }}>{Math.round(item.sentiment)}%</span>
                         </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="h-32 flex flex-col items-center justify-center text-slate-400 dark:text-slate-500 text-sm">
-                    <p>No theme data available</p>
-                    <p className="text-xs mt-1">Generate an AI summary to see theme breakdown</p>
-                  </div>
-                )}
+                        <div className="h-2 w-full bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ width: `${item.sentiment}%`, backgroundColor: barColor }}
+                          />
+                        </div>
+                      </div>
+                    )
+                  })}
+                  {themeSentiments.length === 0 && (
+                    <div className="text-center text-slate-400 text-sm py-8">Generate AI summary to see themes</div>
+                  )}
+                </div>
               </div>
             </div>
-          </div>
+          </GlassCard>
 
-          {/* AI Summary */}
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-2">
-                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">AI Summary</h3>
-                {summary?.responseCount > 0 && summary.responseCount !== responses.length && (
-                  <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
-                    Update Available
-                  </span>
-                )}
-              </div>
-              <button
-                onClick={refreshSummary}
-                disabled={isLoadingSummary || !configStatus.gemini || responses.length === 0}
-                className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
-                title={
-                  !configStatus.gemini
-                    ? 'Add Gemini API key to enable AI summaries'
-                    : responses.length === 0
-                      ? 'No responses to summarize'
-                      : summary?.responseCount > 0 && summary.responseCount !== responses.length
-                        ? 'Click to generate updated summary'
-                        : 'Click to refresh summary'
-                }
-              >
-                <RefreshCw size={16} className={`text-slate-500 dark:text-slate-400 ${isLoadingSummary ? 'animate-spin' : ''}`} />
-              </button>
-            </div>
-
-            {isLoadingSummary ? (
-              <div className="flex flex-col items-center justify-center h-48 gap-3">
-                <LoadingSpinner />
-                <p className="text-sm text-slate-500 dark:text-slate-400">Generating AI summary...</p>
-              </div>
-            ) : summary ? (
-              <div className="space-y-4">
-                {summary.cachedAt && (
-                  <div className="text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1">
-                    <span>
-                      Cached {new Date(summary.cachedAt?.seconds * 1000 || Date.now()).toLocaleString()}
-                    </span>
-                    {summary.responseCount > 0 && summary.responseCount !== responses.length && (
-                      <span className="text-amber-600 dark:text-amber-500">
-                        • {responses.length - summary.responseCount} new response(s)
-                      </span>
-                    )}
+          {/* AI Summary Side Panel */}
+          <div className="space-y-6">
+            <GlassCard className="p-6 h-full flex flex-col">
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+                    <Sparkles className="text-white" size={20} />
                   </div>
-                )}
-                <p className="text-sm text-slate-600 dark:text-slate-300">{summary.summary}</p>
-
-                {summary.themes?.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Key Themes</p>
-                    <div className="flex flex-wrap gap-2">
-                      {summary.themes.map((theme, i) => (
-                        <span key={i} className="px-2 py-1 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 text-xs rounded-full">
-                          #{theme}
-                        </span>
-                      ))}
+                    <h3 className="font-bold text-slate-900 dark:text-white leading-tight">AI Insights</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Powered by Gemini</p>
+                  </div>
+                </div>
+                <button
+                  onClick={refreshSummary}
+                  disabled={isLoadingSummary || !configStatus.gemini || responses.length === 0}
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors disabled:opacity-50"
+                >
+                  <RefreshCw size={18} className={`text-slate-500 ${isLoadingSummary ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+
+              <div className="flex-1">
+                {isLoadingSummary ? (
+                  <div className="h-full flex flex-col items-center justify-center text-slate-400 space-y-3 min-h-[200px]">
+                    <LoadingSpinner />
+                    <span className="text-sm">Analyzing feedback...</span>
+                  </div>
+                ) : summary ? (
+                  <div className="space-y-6">
+                    <div className="bg-indigo-50/50 dark:bg-indigo-900/10 p-4 rounded-xl border border-indigo-100 dark:border-indigo-800/30">
+                      <p className="text-sm leading-relaxed text-indigo-900 dark:text-indigo-100">
+                        {summary.summary}
+                      </p>
+                    </div>
+
+                    {summary.actionItems?.length > 0 && (
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-3">Recommended Actions</h4>
+                        <ul className="space-y-3">
+                          {summary.actionItems.slice(0, 3).map((item, i) => (
+                            <li key={i} className="flex gap-3 text-sm text-slate-600 dark:text-slate-300">
+                              <div className="shrink-0 w-5 h-5 rounded-full bg-sky-100 dark:bg-sky-500/20 flex items-center justify-center mt-0.5">
+                                <span className="text-xs font-bold text-sky-600 dark:text-sky-400">{i + 1}</span>
+                              </div>
+                              <span>{item}</span>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800/50">
+                      <p className="text-xs text-center text-slate-400">
+                        Last updated: {summary.cachedAt ? new Date(summary.cachedAt.seconds * 1000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Just now'}
+                      </p>
                     </div>
                   </div>
-                )}
-
-                {summary.actionItems?.length > 0 && (
-                  <div>
-                    <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Suggested Actions</p>
-                    <ul className="space-y-1">
-                      {summary.actionItems.map((item, i) => (
-                        <li key={i} className="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
-                          <span className="text-sky-500 dark:text-sky-400 mt-1">•</span>
-                          {item}
-                        </li>
-                      ))}
-                    </ul>
+                ) : (
+                  <div className="text-center text-slate-400 py-10">
+                    No data to analyze yet
                   </div>
                 )}
               </div>
-            ) : (
-              <p className="text-sm text-slate-500 dark:text-slate-400">No data to summarize yet.</p>
-            )}
+            </GlassCard>
           </div>
         </div>
 
+        {/* Demo Data Management Footer */}
+        <div className="mt-12 mb-6 flex flex-col items-center">
+          <button
+            onClick={() => setShowDemoData(!showDemoData)}
+            className="flex items-center gap-2 text-sm font-medium text-slate-400 hover:text-indigo-500 transition-colors px-4 py-2 rounded-full hover:bg-white/50 dark:hover:bg-slate-800/50"
+          >
+            <Database size={16} />
+            <span>Manage Demo Data</span>
+            {showDemoData ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
 
+          {showDemoData && (
+            <div className="mt-4 w-full max-w-2xl bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-200/50 dark:border-slate-800/50 p-6 shadow-xl animate-in fade-in slide-in-from-bottom-4 duration-300">
+              <div className="flex items-start gap-4 mb-6">
+                <div className="flex-shrink-0 w-10 h-10 bg-amber-100 dark:bg-amber-900/30 rounded-lg flex items-center justify-center">
+                  <Database className="text-amber-600 dark:text-amber-400" size={20} />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-base font-bold text-slate-900 dark:text-white">Test Data Controls</h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    Populate your database with realistic sample data to test the analytics engine.
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <button
+                  onClick={handleSeedTestData}
+                  disabled={isSeeding || isClearing}
+                  className="flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-medium rounded-xl shadow-lg shadow-sky-500/20 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isSeeding ? <LoadingSpinner size="sm" light /> : <Database size={18} />}
+                  <span>Seed Test Data</span>
+                </button>
+
+                <button
+                  onClick={handleClearTestData}
+                  disabled={isSeeding || isClearing}
+                  className="flex items-center justify-center gap-2 px-4 py-3 bg-white dark:bg-slate-800 text-rose-600 dark:text-rose-400 font-medium rounded-xl border border-slate-200 dark:border-slate-700 hover:border-rose-200 dark:hover:border-rose-800 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isClearing ? <LoadingSpinner size="sm" /> : <Trash2 size={18} />}
+                  <span>Clear All Data</span>
+                </button>
+              </div>
+
+              {/* Messages */}
+              {(seedMessage || clearMessage) && (
+                <div className="mt-4 p-3 rounded-lg bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 text-sm">
+                  {seedMessage && <p className={`font-medium ${seedMessage.type === 'success' ? 'text-emerald-600' : 'text-rose-600'}`}>{seedMessage.text}</p>}
+                  {clearMessage && <p className={`font-medium ${clearMessage.type === 'success' ? 'text-emerald-600' : 'text-rose-600'}`}>{clearMessage.text}</p>}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Modals - Keeping structure, adding glass class to containers if needed, though usually modals are solid or heavily blurred overlays */}
         {/* Response Rate Detail Modal */}
         {showResponseRateModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 p-4 pt-[10vh] sm:pt-4 overflow-y-auto" onClick={() => setShowResponseRateModal(false)}>
-            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[85vh] sm:max-h-[85dvh] overflow-y-auto my-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Response Rate Details</h2>
-                <button onClick={() => setShowResponseRateModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-start sm:items-center justify-center z-50 p-4 pt-[10vh] sm:pt-4 overflow-y-auto" onClick={() => setShowResponseRateModal(false)}>
+            <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[85vh] sm:max-h-[85dvh] overflow-y-auto my-auto shadow-2xl border border-slate-200 dark:border-slate-800" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur z-10">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Response Rate Details</h2>
+                <button onClick={() => setShowResponseRateModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
                   <X size={20} className="text-slate-500 dark:text-slate-400" />
                 </button>
               </div>
@@ -979,19 +954,19 @@ const AdminDashboard = () => {
                 ) : (
                   <div className="space-y-4">
                     {responseRateDetails.map((detail) => (
-                      <div key={detail.surveyId} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className="font-semibold text-slate-900 dark:text-slate-100">{detail.surveyName}</h3>
+                      <div key={detail.surveyId} className="border border-slate-200 dark:border-slate-700 rounded-2xl p-5 hover:border-teal-200 dark:hover:border-teal-900/50 transition-colors">
+                        <div className="flex items-center justify-between mb-3">
+                          <h3 className="font-semibold text-slate-900 dark:text-white">{detail.surveyName}</h3>
                           <span className="text-lg font-bold text-teal-600 dark:text-teal-400">{detail.rate}%</span>
                         </div>
-                        <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-300">
-                          <span>{detail.votes} votes</span>
-                          <span>•</span>
-                          <span>{detail.eligibleCount} eligible students</span>
+                        <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
+                          <span className="flex items-center gap-1.5"><Users size={14} /> {detail.votes} votes</span>
+                          <span className="opacity-50">•</span>
+                          <span>{detail.eligibleCount} eligible</span>
                         </div>
-                        <div className="mt-3 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                        <div className="mt-3 h-2.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                           <div
-                            className="h-full bg-teal-500 transition-all"
+                            className="h-full bg-teal-500 rounded-full transition-all duration-1000"
                             style={{ width: `${detail.rate}%` }}
                           />
                         </div>
@@ -1006,11 +981,11 @@ const AdminDashboard = () => {
 
         {/* Recent Activity Detail Modal */}
         {showRecentActivityModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 p-4 pt-[10vh] sm:pt-4 overflow-y-auto" onClick={() => setShowRecentActivityModal(false)}>
-            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[85vh] sm:max-h-[85dvh] overflow-y-auto my-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Recent Activity Timeline</h2>
-                <button onClick={() => setShowRecentActivityModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-start sm:items-center justify-center z-50 p-4 pt-[10vh] sm:pt-4 overflow-y-auto" onClick={() => setShowRecentActivityModal(false)}>
+            <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[85vh] sm:max-h-[85dvh] overflow-y-auto my-auto shadow-2xl border border-slate-200 dark:border-slate-800" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur z-10">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Recent Activity Timeline</h2>
+                <button onClick={() => setShowRecentActivityModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
                   <X size={20} className="text-slate-500 dark:text-slate-400" />
                 </button>
               </div>
@@ -1018,29 +993,38 @@ const AdminDashboard = () => {
                 {recentActivityDetails.length === 0 ? (
                   <p className="text-slate-500 dark:text-slate-400 text-center py-8">No activity in the last 7 days.</p>
                 ) : (
-                  <div className="space-y-4">
+                  <div className="relative border-l-2 border-slate-200 dark:border-slate-800 ml-3 space-y-8">
                     {recentActivityDetails.map((day, idx) => (
-                      <div key={idx} className="border border-slate-200 dark:border-slate-700 rounded-lg p-4">
-                        <div className="flex items-center justify-between mb-3">
-                          <h3 className="font-semibold text-slate-900 dark:text-slate-100">
+                      <div key={idx} className="pl-6 relative">
+                        <div className="absolute -left-[9px] top-0 w-4 h-4 rounded-full bg-indigo-500 border-4 border-white dark:border-slate-900" />
+                        <div className="flex items-center justify-between mb-4">
+                          <h3 className="font-bold text-slate-900 dark:text-white">
                             {day.date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' })}
                           </h3>
-                          <span className="text-lg font-bold text-purple-600 dark:text-purple-400">{day.count} response{day.count !== 1 ? 's' : ''}</span>
+                          <span className="px-3 py-1 rounded-full bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 text-xs font-bold">
+                            {day.count} {day.count !== 1 ? 'responses' : 'response'}
+                          </span>
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-3">
                           {day.responses.slice(0, 5).map((response, rIdx) => (
-                            <div key={rIdx} className="text-sm text-slate-600 dark:text-slate-300 pl-4 border-l-2 border-purple-200 dark:border-purple-800">
-                              <span className="text-slate-400 dark:text-slate-500">
-                                {response.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
-                              </span>
-                              {' • '}
-                              <span className="text-slate-700 dark:text-slate-300">
-                                {response.sentimentScore !== undefined ? `Sentiment: ${response.sentimentScore}/100` : 'Response submitted'}
-                              </span>
+                            <div key={rIdx} className="bg-slate-50 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-100 dark:border-slate-700/50 text-sm">
+                              <div className="flex justify-between items-start">
+                                <span className="text-slate-500 dark:text-slate-400 font-medium">
+                                  {response.timestamp.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })}
+                                </span>
+                                {response.sentimentScore !== undefined && (
+                                  <span className={`font-bold ${response.sentimentScore >= 70 ? 'text-emerald-500' : response.sentimentScore >= 40 ? 'text-amber-500' : 'text-rose-500'
+                                    }`}>
+                                    Score: {response.sentimentScore}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           ))}
                           {day.responses.length > 5 && (
-                            <p className="text-sm text-slate-500 dark:text-slate-400 pl-4">...and {day.responses.length - 5} more</p>
+                            <button className="text-sm font-medium text-indigo-500 hover:underline pl-1">
+                              View {day.responses.length - 5} more responses
+                            </button>
                           )}
                         </div>
                       </div>
@@ -1054,120 +1038,64 @@ const AdminDashboard = () => {
 
         {/* Risk Distribution Detail Modal */}
         {showRiskDistributionModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 p-4 pt-[10vh] sm:pt-4 overflow-y-auto" onClick={() => setShowRiskDistributionModal(false)}>
-            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[85vh] sm:max-h-[85dvh] overflow-y-auto my-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Risk Distribution Details</h2>
-                <button onClick={() => setShowRiskDistributionModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-start sm:items-center justify-center z-50 p-4 pt-[10vh] sm:pt-4 overflow-y-auto" onClick={() => setShowRiskDistributionModal(false)}>
+            <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[85vh] sm:max-h-[85dvh] overflow-y-auto my-auto shadow-2xl border border-slate-200 dark:border-slate-800" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur z-10">
+                <h2 className="text-xl font-bold text-slate-900 dark:text-white">Risk Metrics</h2>
+                <button onClick={() => setShowRiskDistributionModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
                   <X size={20} className="text-slate-500 dark:text-slate-400" />
                 </button>
               </div>
               <div className="p-4 sm:p-6">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
-                  <button
-                    onClick={() => setRiskFilterLevel('high')}
-                    className={`text-left rounded-lg p-3 sm:p-4 transition-all ${riskFilterLevel === 'high'
-                        ? 'bg-red-50 dark:bg-red-900/20 border-2 border-red-500 dark:border-red-600 shadow-md'
-                        : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 hover:border-red-300 dark:hover:border-red-700'
-                      }`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="w-3 h-3 rounded-full bg-red-500"></span>
-                      <h3 className="font-semibold text-red-900 dark:text-red-300">High Risk</h3>
-                    </div>
-                    <p className="text-2xl font-bold text-red-600 dark:text-red-400">{riskMetrics.highRiskCount}</p>
-                    <p className="text-sm text-red-700 dark:text-red-300">
-                      {riskMetrics.totalStudents > 0 ? Math.round((riskMetrics.highRiskCount / riskMetrics.totalStudents) * 100) : 0}% of total
-                    </p>
-                  </button>
-                  <button
-                    onClick={() => setRiskFilterLevel('medium')}
-                    className={`text-left rounded-lg p-3 sm:p-4 transition-all ${riskFilterLevel === 'medium'
-                        ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500 dark:border-amber-600 shadow-md'
-                        : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/30 hover:border-amber-300 dark:hover:border-amber-700'
-                      }`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="w-3 h-3 rounded-full bg-amber-500"></span>
-                      <h3 className="font-semibold text-amber-900 dark:text-amber-300">Medium Risk</h3>
-                    </div>
-                    <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">{riskMetrics.mediumRiskCount}</p>
-                    <p className="text-sm text-amber-700 dark:text-amber-300">
-                      {riskMetrics.totalStudents > 0 ? Math.round((riskMetrics.mediumRiskCount / riskMetrics.totalStudents) * 100) : 0}% of total
-                    </p>
-                  </button>
-                  <button
-                    onClick={() => setRiskFilterLevel('low')}
-                    className={`text-left rounded-lg p-3 sm:p-4 transition-all ${riskFilterLevel === 'low'
-                        ? 'bg-green-50 dark:bg-green-900/20 border-2 border-green-500 dark:border-green-600 shadow-md'
-                        : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 hover:border-green-300 dark:hover:border-green-700'
-                      }`}
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="w-3 h-3 rounded-full bg-green-500"></span>
-                      <h3 className="font-semibold text-green-900 dark:text-green-300">Low Risk</h3>
-                    </div>
-                    <p className="text-2xl font-bold text-green-600 dark:text-green-400">{riskMetrics.lowRiskCount}</p>
-                    <p className="text-sm text-green-700 dark:text-green-300">
-                      {riskMetrics.totalStudents > 0 ? Math.round((riskMetrics.lowRiskCount / riskMetrics.totalStudents) * 100) : 0}% of total
-                    </p>
-                  </button>
-                  {riskMetrics.unknownRiskCount > 0 && (
-                    <button
-                      onClick={() => setRiskFilterLevel('unknown')}
-                      className={`text-left rounded-lg p-3 sm:p-4 transition-all ${riskFilterLevel === 'unknown'
-                          ? 'bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-500 dark:border-slate-500 shadow-md'
-                          : 'bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
-                        }`}
-                    >
-                      <div className="flex items-center gap-2 mb-2">
-                        <HelpCircle size={16} className="text-slate-400 dark:text-slate-500" />
-                        <h3 className="font-semibold text-slate-900 dark:text-slate-100">Unknown</h3>
-                      </div>
-                      <p className="text-2xl font-bold text-slate-600 dark:text-slate-300">{riskMetrics.unknownRiskCount}</p>
-                      <p className="text-sm text-slate-700 dark:text-slate-400">
-                        {riskMetrics.totalStudents > 0 ? Math.round((riskMetrics.unknownRiskCount / riskMetrics.totalStudents) * 100) : 0}% of total
-                      </p>
-                    </button>
-                  )}
+                <div className="grid grid-cols-2 gap-3 mb-6">
+                  {['high', 'medium', 'low', 'unknown'].map((level) => {
+                    const isSelected = riskFilterLevel === level;
+                    const metrics = {
+                      high: { count: riskMetrics.highRiskCount, color: 'text-rose-600', bg: 'bg-rose-50', border: 'border-rose-200', active: 'ring-rose-500' },
+                      medium: { count: riskMetrics.mediumRiskCount, color: 'text-amber-600', bg: 'bg-amber-50', border: 'border-amber-200', active: 'ring-amber-500' },
+                      low: { count: riskMetrics.lowRiskCount, color: 'text-emerald-600', bg: 'bg-emerald-50', border: 'border-emerald-200', active: 'ring-emerald-500' },
+                      unknown: { count: riskMetrics.unknownRiskCount, color: 'text-slate-600', bg: 'bg-slate-50', border: 'border-slate-200', active: 'ring-slate-500' },
+                    }[level];
+
+                    if (level === 'unknown' && riskMetrics.unknownRiskCount === 0) return null;
+
+                    return (
+                      <button
+                        key={level}
+                        onClick={() => setRiskFilterLevel(level)}
+                        className={`p-4 rounded-2xl border-2 text-left transition-all ${isSelected
+                          ? `border-transparent ring-2 ${metrics.active} bg-white dark:bg-slate-800 shadow-md`
+                          : 'border-slate-100 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 hover:border-slate-200'
+                          }`}
+                      >
+                        <p className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1">{level} Risk</p>
+                        <p className={`text-2xl font-bold ${metrics.color} dark:text-white`}>{metrics.count}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                          {riskMetrics.totalStudents > 0 ? Math.round((metrics.count / riskMetrics.totalStudents) * 100) : 0}% of total
+                        </p>
+                      </button>
+                    )
+                  })}
                 </div>
-                <div className="border-t border-slate-200 dark:border-slate-700 pt-4">
-                  <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-3">
-                    {riskFilterLevel === 'high' && 'High Risk Students'}
-                    {riskFilterLevel === 'medium' && 'Medium Risk Students'}
-                    {riskFilterLevel === 'low' && 'Low Risk Students'}
-                    {riskFilterLevel === 'unknown' && 'Students with Unknown Risk'}
-                  </h3>
+
+                <div className="border-t border-slate-200 dark:border-slate-800 pt-5">
                   {students.filter(s => s.riskLevel === riskFilterLevel || (!s.riskLevel && riskFilterLevel === 'unknown')).length === 0 ? (
-                    <p className="text-slate-500 dark:text-slate-400 text-sm">No students in this category.</p>
+                    <div className="text-center py-6 text-slate-500">No students found with {riskFilterLevel} risk.</div>
                   ) : (
-                    <div className="space-y-2 max-h-64 overflow-y-auto">
-                      {students.filter(s => s.riskLevel === riskFilterLevel || (!s.riskLevel && riskFilterLevel === 'unknown')).map(student => {
-                        const getRiskColor = (level) => {
-                          if (level === 'high') return { bg: 'bg-red-50 dark:bg-red-900/20', border: 'border-red-100 dark:border-red-900/30', text: 'text-red-600 dark:text-red-400', initBg: 'bg-red-100 dark:bg-red-900/40' };
-                          if (level === 'medium') return { bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-100 dark:border-amber-900/30', text: 'text-amber-600 dark:text-amber-400', initBg: 'bg-amber-100 dark:bg-amber-900/40' };
-                          if (level === 'low') return { bg: 'bg-green-50 dark:bg-green-900/20', border: 'border-green-100 dark:border-green-900/30', text: 'text-green-600 dark:text-green-400', initBg: 'bg-green-100 dark:bg-green-900/40' };
-                          return { bg: 'bg-slate-50 dark:bg-slate-700/50', border: 'border-slate-100 dark:border-slate-600', text: 'text-slate-600 dark:text-slate-300', initBg: 'bg-slate-100 dark:bg-slate-600' };
-                        };
-                        const colors = getRiskColor(riskFilterLevel);
-                        return (
-                          <div key={student.id} className={`flex items-center justify-between p-3 ${colors.bg} border ${colors.border} rounded-lg`}>
-                            <div className="flex items-center gap-3">
-                              <div className={`w-8 h-8 ${colors.initBg} rounded-full flex items-center justify-center`}>
-                                <span className={`${colors.text} font-medium text-sm`}>
-                                  {student.name?.charAt(0) || '?'}
-                                </span>
-                              </div>
-                              <div>
-                                <p className="font-medium text-slate-900 dark:text-slate-100 text-sm">{student.name}</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">
-                                  {student.milestone} • GPA: {student.gpa !== null ? student.gpa?.toFixed(1) : 'N/A'}
-                                </p>
-                              </div>
+                    <div className="space-y-2 max-h-64 overflow-y-auto pr-2 custom-scrollbar">
+                      {students.filter(s => s.riskLevel === riskFilterLevel || (!s.riskLevel && riskFilterLevel === 'unknown')).map(student => (
+                        <div key={student.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
+                          <div className="flex items-center gap-3">
+                            <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400">
+                              {student.name?.charAt(0) || '?'}
+                            </div>
+                            <div>
+                              <p className="font-semibold text-slate-900 dark:text-white text-sm">{student.name}</p>
+                              <p className="text-xs text-slate-500">{student.milestone} • GPA: {student.gpa ?? 'N/A'}</p>
                             </div>
                           </div>
-                        );
-                      })}
+                        </div>
+                      ))}
                     </div>
                   )}
                 </div>
@@ -1178,55 +1106,51 @@ const AdminDashboard = () => {
 
         {/* Needs Attention Modal */}
         {showNeedsAttentionModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-start sm:items-center justify-center z-50 p-4 pt-[10vh] sm:pt-4 overflow-y-auto" onClick={() => setShowNeedsAttentionModal(false)}>
-            <div className="bg-white dark:bg-slate-800 rounded-xl max-w-2xl w-full max-h-[85vh] sm:max-h-[85dvh] overflow-y-auto my-auto" onClick={(e) => e.stopPropagation()}>
-              <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+          <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex items-start sm:items-center justify-center z-50 p-4 pt-[10vh] sm:pt-4 overflow-y-auto" onClick={() => setShowNeedsAttentionModal(false)}>
+            <div className="bg-white dark:bg-slate-900 rounded-3xl max-w-2xl w-full max-h-[85vh] sm:max-h-[85dvh] overflow-y-auto my-auto shadow-2xl border border-slate-200 dark:border-slate-800" onClick={(e) => e.stopPropagation()}>
+              <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between sticky top-0 bg-white/95 dark:bg-slate-900/95 backdrop-blur z-10">
                 <div className="flex items-center gap-3">
-                  <AlertTriangle className="text-red-500" size={24} />
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Students Needing Attention</h2>
+                  <div className="w-8 h-8 rounded-lg bg-rose-100 dark:bg-rose-900/40 flex items-center justify-center">
+                    <AlertTriangle className="text-rose-600 dark:text-rose-400" size={18} />
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">Attention Required</h2>
                 </div>
-                <button onClick={() => setShowNeedsAttentionModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors">
+                <button onClick={() => setShowNeedsAttentionModal(false)} className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
                   <X size={20} className="text-slate-500 dark:text-slate-400" />
                 </button>
               </div>
               <div className="p-6">
-                <div className="mb-4">
-                  <p className="text-sm text-slate-600 dark:text-slate-300">
-                    The following students have been identified as high-risk based on their GPA and performance metrics.
-                    Consider reaching out for additional support.
-                  </p>
-                </div>
                 {riskMetrics.highRiskCount === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
-                      <Users className="text-green-600 dark:text-green-400" size={32} />
+                  <div className="text-center py-12 flex flex-col items-center">
+                    <div className="w-20 h-20 bg-emerald-100 dark:bg-emerald-900/20 rounded-full flex items-center justify-center mb-4">
+                      <Sparkles className="text-emerald-500" size={32} />
                     </div>
-                    <h3 className="font-semibold text-slate-900 dark:text-slate-100 mb-1">All Students On Track</h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">No high-risk students at this time.</p>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">All Clear!</h3>
+                    <p className="text-slate-500 dark:text-slate-400 max-w-xs">No high-risk students detected at this time.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
+                  <div className="space-y-4">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                      {riskMetrics.highRiskCount} student{riskMetrics.highRiskCount !== 1 ? 's' : ''} flagged as high-risk based on GPA thresholds.
+                    </p>
                     {students.filter(s => s.riskLevel === 'high').map(student => (
-                      <div key={student.id} className="flex items-center justify-between p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 rounded-lg hover:shadow-md transition-shadow">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 bg-red-100 dark:bg-red-900/40 rounded-full flex items-center justify-center">
-                            <span className="text-red-600 dark:text-red-400 font-bold text-lg">
+                      <div key={student.id} className="flex items-center justify-between p-4 bg-rose-50 dark:bg-rose-900/10 border border-rose-100 dark:border-rose-900/30 rounded-2xl">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-white dark:bg-rose-900/40 rounded-full flex items-center justify-center border-2 border-rose-100 dark:border-rose-800">
+                            <span className="text-rose-600 dark:text-rose-400 font-bold text-lg">
                               {student.name?.charAt(0) || '?'}
                             </span>
                           </div>
                           <div>
-                            <p className="font-semibold text-slate-900 dark:text-slate-100">{student.name}</p>
+                            <p className="font-bold text-slate-900 dark:text-white">{student.name}</p>
                             <p className="text-sm text-slate-500 dark:text-slate-400">
-                              {student.milestone} • GPA: {student.gpa !== null ? student.gpa?.toFixed(1) : 'N/A'}
+                              {student.milestone} • <span className="text-rose-600 dark:text-rose-400 font-medium">GPA: {student.gpa?.toFixed(1)}</span>
                             </p>
-                            {student.email && (
-                              <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{student.email}</p>
-                            )}
                           </div>
                         </div>
-                        <span className="px-3 py-1.5 bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 text-sm font-medium rounded-full">
-                          High Risk
-                        </span>
+                        <button className="px-4 py-2 bg-white dark:bg-rose-900/30 text-rose-600 dark:text-rose-300 text-sm font-semibold rounded-xl border border-rose-100 dark:border-rose-800 hover:bg-rose-50 dark:hover:bg-rose-900/50 transition-colors">
+                          View Profile
+                        </button>
                       </div>
                     ))}
                   </div>
@@ -1236,100 +1160,6 @@ const AdminDashboard = () => {
           </div>
         )}
 
-        {/* Test Data Management Section - Collapsible */}
-        <div className="mt-8">
-          <button
-            onClick={() => setShowDemoData(!showDemoData)}
-            className="flex items-center gap-2 px-3 py-2 text-sm text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-          >
-            <Database size={16} />
-            <span>Demo Data Management</span>
-            {showDemoData ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-          </button>
-
-          {showDemoData && (
-            <div className="mt-3 bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/10 dark:to-orange-900/10 rounded-xl border-2 border-amber-200 dark:border-amber-900/30 p-6 shadow-sm">
-              <div className="flex items-start gap-4 mb-4">
-                <div className="flex-shrink-0 w-12 h-12 bg-amber-100 dark:bg-amber-900/30 rounded-xl flex items-center justify-center">
-                  <Database className="text-amber-600 dark:text-amber-400" size={24} />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-amber-900 dark:text-amber-300 mb-1">Demo Data Management</h3>
-                  <p className="text-sm text-amber-700 dark:text-amber-400">
-                    Use these tools to populate or clear your database for demonstration purposes.
-                    <span className="font-medium"> Seed creates 3 cohorts, 30 students, 5 surveys, 60 responses, 20 wall posts, and 60+ chat messages.</span>
-                  </p>
-                </div>
-              </div>
-
-              {/* Status Messages */}
-              {seedMessage && (
-                <div className={`mb-4 p-3 rounded-lg border ${seedMessage.type === 'success'
-                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300'
-                    : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
-                  }`}>
-                  <p className="text-sm font-medium">{seedMessage.text}</p>
-                </div>
-              )}
-
-              {clearMessage && (
-                <div className={`mb-4 p-3 rounded-lg border ${clearMessage.type === 'success'
-                    ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300'
-                    : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
-                  }`}>
-                  <p className="text-sm font-medium">{clearMessage.text}</p>
-                </div>
-              )}
-
-              {/* Action Buttons */}
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button
-                  onClick={handleSeedTestData}
-                  disabled={isSeeding || isClearing}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-medium rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isSeeding ? (
-                    <>
-                      <LoadingSpinner size="sm" light />
-                      <span>Seeding Data...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Database size={18} />
-                      <span>Seed Test Data</span>
-                    </>
-                  )}
-                </button>
-
-                <button
-                  onClick={handleClearTestData}
-                  disabled={isSeeding || isClearing}
-                  className="flex-1 flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-600 hover:to-rose-700 disabled:from-slate-400 disabled:to-slate-500 text-white font-medium rounded-lg transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {isClearing ? (
-                    <>
-                      <LoadingSpinner size="sm" light />
-                      <span>Clearing Data...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Trash2 size={18} />
-                      <span>Clear All Data</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {/* Warning Notice */}
-              <div className="mt-4 p-3 bg-amber-100 dark:bg-amber-900/20 border border-amber-300 dark:border-amber-900/40 rounded-lg">
-                <p className="text-xs text-amber-800 dark:text-amber-300">
-                  <span className="font-semibold">⚠️ Important:</span> Clear All Data will permanently delete all records from Firebase.
-                  This action cannot be undone. Always backup important data before clearing.
-                </p>
-              </div>
-            </div>
-          )}
-        </div>
       </div>
     </AdminLayout>
   );

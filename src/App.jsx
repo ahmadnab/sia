@@ -2,7 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy } from 'react';
 import { AppProvider, useApp } from './context/AppContext';
 import { ThemeProvider } from './context/ThemeContext';
-import RoleSwitcher from './components/RoleSwitcher';
+
 import DemoBanner from './components/DemoBanner';
 import LoadingSpinner from './components/LoadingSpinner';
 import ThemeToggle from './components/ThemeToggle';
@@ -69,11 +69,8 @@ const StudentLayout = () => {
           </Routes>
         </Suspense>
       </div>
-      {/* Theme Toggle - Fixed Position */}
-      <div className="fixed top-20 right-4 z-40">
-        <ThemeToggle />
-      </div>
-      <RoleSwitcher />
+
+
     </>
   );
 };
@@ -111,7 +108,6 @@ const AdminLayout = () => {
           </Routes>
         </Suspense>
       </div>
-      <RoleSwitcher />
     </>
   );
 };

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { MessageCircle, Search, Users, AlertTriangle, TrendingUp, FileText, X, ChevronRight, RefreshCw, Send, Mail } from 'lucide-react';
+import { MessageCircle, Search, Users, AlertTriangle, TrendingUp, FileText, X, ChevronRight, RefreshCw, Send, Mail, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 import AdminLayout from '../../components/AdminLayout';
 import { getChatAnalytics, subscribeToCohorts, subscribeToChatHistory, getCachedChatSummary, saveChatSummaryCache, sendDirectMessage, subscribeToAllDirectMessages } from '../../services/firebase';
@@ -247,7 +247,7 @@ const AdminStudentChats = () => {
 
   return (
     <AdminLayout>
-      <div className="min-h-screen">
+      <div className="min-h-screen p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
         {/* Notification */}
         <AnimatePresence>
           {notification && (
@@ -255,34 +255,42 @@ const AdminStudentChats = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className={`fixed top-4 right-4 z-50 p-4 rounded-xl flex items-center gap-3 shadow-lg ${
-                notification.type === 'success'
-                  ? 'bg-green-50 dark:bg-green-900/90 border border-green-200 dark:border-green-700 text-green-700 dark:text-green-300'
-                  : 'bg-red-50 dark:bg-red-900/90 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300'
-              }`}
+              className={`fixed top-4 right-4 z-50 p-4 rounded-xl flex items-center gap-3 shadow-lg backdrop-blur-md ${notification.type === 'success'
+                ? 'bg-green-50/90 dark:bg-green-900/90 border border-green-200 dark:border-green-700 text-green-800 dark:text-green-300'
+                : 'bg-red-50/90 dark:bg-red-900/90 border border-red-200 dark:border-red-700 text-red-800 dark:text-red-300'
+                }`}
             >
-              <span>{notification.message}</span>
-              <button onClick={() => setNotification(null)} className="p-1 hover:bg-black/5 rounded">
+              <span className="font-medium">{notification.message}</span>
+              <button onClick={() => setNotification(null)} className="p-1 hover:bg-black/5 rounded-full">
                 <X size={16} />
               </button>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Header */}
-        <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-sky-500 rounded-xl flex items-center justify-center">
-              <MessageCircle size={24} className="text-white" />
-            </div>
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-700 p-8 shadow-xl shadow-indigo-500/20">
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 blur-3xl rounded-full" />
+
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Student Chat Analytics</h1>
-              <p className="text-slate-600 dark:text-slate-400">Monitor and support student conversations with Sia</p>
+              <div className="flex items-center gap-2 text-indigo-100 mb-2">
+                <MessageCircle size={16} className="text-indigo-200" />
+                <span className="text-sm font-medium tracking-wide uppercase opacity-90">Student Support</span>
+              </div>
+              <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">
+                Chat Analytics
+              </h1>
+              <p className="text-indigo-100/90 text-lg max-w-xl">
+                Monitor student engagement, identify at-risk students, and provide timely support.
+              </p>
             </div>
           </div>
+        </div>
 
-          {/* Filters */}
+        {/* Filters */}
+        <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 shadow-sm">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search */}
             <div className="relative">
@@ -292,423 +300,438 @@ const AdminStudentChats = () => {
                 placeholder="Search by name or email..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="w-full pl-10 pr-4 py-2.5 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all hover:bg-white dark:hover:bg-slate-800"
               />
             </div>
 
             {/* Risk Level Filter */}
-            <div>
+            <div className="relative">
               <select
                 value={riskFilter}
                 onChange={(e) => setRiskFilter(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="w-full pl-4 pr-10 py-2.5 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none transition-all hover:bg-white dark:hover:bg-slate-800"
               >
                 <option value="all">All Risk Levels</option>
                 <option value="high">High Risk</option>
                 <option value="medium">Medium Risk</option>
                 <option value="low">Low Risk</option>
               </select>
+              <AlertTriangle size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
 
             {/* Cohort Filter */}
-            <div>
+            <div className="relative">
               <select
                 value={cohortFilter}
                 onChange={(e) => setCohortFilter(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="w-full pl-4 pr-10 py-2.5 bg-white/50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 appearance-none transition-all hover:bg-white dark:hover:bg-slate-800"
               >
                 <option value="all">All Cohorts</option>
                 {cohorts.map(cohort => (
                   <option key={cohort.id} value={cohort.id}>{cohort.name}</option>
                 ))}
               </select>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto p-6">
-        {/* Stats Overview */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-3">
-              <Users className="text-sky-500" size={20} />
-              <div>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Total Students</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">{filteredStudents.length}</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="text-red-500" size={20} />
-              <div>
-                <p className="text-sm text-slate-600 dark:text-slate-400">High Risk</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {filteredStudents.filter(s => s.riskLevel === 'high').length}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-3">
-              <TrendingUp className="text-amber-500" size={20} />
-              <div>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Medium Risk</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {filteredStudents.filter(s => s.riskLevel === 'medium').length}
-                </p>
-              </div>
-            </div>
-          </div>
-
-          <div className="bg-white dark:bg-slate-800 rounded-xl p-4 border border-slate-200 dark:border-slate-700">
-            <div className="flex items-center gap-3">
-              <MessageCircle className="text-green-500" size={20} />
-              <div>
-                <p className="text-sm text-slate-600 dark:text-slate-400">Active Chats</p>
-                <p className="text-2xl font-bold text-slate-900 dark:text-white">
-                  {filteredStudents.filter(s => s.messageCount > 0).length}
-                </p>
-              </div>
+              <Users size={16} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
             </div>
           </div>
         </div>
 
-        {/* Students List */}
-        {isLoading ? (
-          <div className="flex items-center justify-center py-20">
-            <LoadingSpinner size="lg" />
-          </div>
-        ) : filteredStudents.length === 0 ? (
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-12 text-center">
-            <MessageCircle className="mx-auto text-slate-300 dark:text-slate-600 mb-4" size={48} />
-            <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
-              {students.length === 0 ? 'No chat history yet' : 'No students match your filters'}
-            </h3>
-            <p className="text-slate-500 dark:text-slate-400">
-              {students.length === 0 ? 'Students will appear here once they start chatting with Sia.' : 'Try adjusting your search or filter criteria.'}
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {filteredStudents.map(student => (
-              <div
-                key={student.id}
-                onClick={() => handleViewChat(student)}
-                className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 hover:border-sky-500 dark:hover:border-sky-500 transition-all cursor-pointer group"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-white group-hover:text-sky-500 dark:group-hover:text-sky-400 transition-colors">
-                        {student.name || 'Unknown Student'}
-                      </h3>
-                      <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${getRiskBadgeColor(student.riskLevel)}`}>
-                        {student.riskLevel || 'unknown'} risk
-                      </span>
-                    </div>
+        {/* Main Content */}
+        <div className="space-y-6">
+          {/* Stats Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl p-6 rounded-2xl border border-slate-200/50 dark:border-slate-800/50 shadow-sm hover:shadow-md transition-all duration-300 group">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 rounded-xl group-hover:scale-110 transition-transform">
+                  <Users className="text-indigo-500" size={24} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Total Students</p>
+                  <p className="text-2xl font-bold text-slate-900 dark:text-white">{filteredStudents.length}</p>
+                </div>
+              </div>
+            </div>
 
-                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-3">{student.email}</p>
+            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl p-6 rounded-2xl border border-red-200/50 dark:border-red-900/30 shadow-sm hover:shadow-md transition-all duration-300 group">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-red-50 dark:bg-red-900/20 rounded-xl group-hover:scale-110 transition-transform">
+                  <AlertTriangle className="text-red-500" size={24} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">High Risk</p>
+                  <p className="text-2xl font-bold text-red-600 dark:text-red-400">
+                    {filteredStudents.filter(s => s.riskLevel === 'high').length}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-                    <div className="flex items-center gap-4 text-sm text-slate-600 dark:text-slate-400">
-                      <span className="flex items-center gap-1">
-                        <MessageCircle size={14} />
-                        {student.messageCount} messages
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users size={14} />
-                        {cohorts.find(c => c.id === student.cohortId)?.name || 'No cohort'}
-                      </span>
-                      {student.lastMessageAt && (
-                        <span className="text-slate-500 dark:text-slate-500">
-                          Last active {formatDate(student.lastMessageAt)}
+            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl p-6 rounded-2xl border border-amber-200/50 dark:border-amber-900/30 shadow-sm hover:shadow-md transition-all duration-300 group">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-xl group-hover:scale-110 transition-transform">
+                  <TrendingUp className="text-amber-500" size={24} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Medium Risk</p>
+                  <p className="text-2xl font-bold text-amber-600 dark:text-amber-400">
+                    {filteredStudents.filter(s => s.riskLevel === 'medium').length}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl p-6 rounded-2xl border border-emerald-200/50 dark:border-emerald-900/30 shadow-sm hover:shadow-md transition-all duration-300 group">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl group-hover:scale-110 transition-transform">
+                  <MessageCircle className="text-emerald-500" size={24} />
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Active Chats</p>
+                  <p className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
+                    {filteredStudents.filter(s => s.messageCount > 0).length}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Students List */}
+          {isLoading ? (
+            <div className="flex items-center justify-center py-20">
+              <LoadingSpinner size="lg" />
+            </div>
+          ) : filteredStudents.length === 0 ? (
+            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-12 text-center">
+              <MessageCircle className="mx-auto text-slate-300 dark:text-slate-600 mb-4" size={48} />
+              <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100 mb-2">
+                {students.length === 0 ? 'No chat history yet' : 'No students match your filters'}
+              </h3>
+              <p className="text-slate-500 dark:text-slate-400">
+                {students.length === 0 ? 'Students will appear here once they start chatting with Sia.' : 'Try adjusting your search or filter criteria.'}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {filteredStudents.map(student => (
+                <div
+                  key={student.id}
+                  onClick={() => handleViewChat(student)}
+                  className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl rounded-2xl border border-slate-200/50 dark:border-slate-800/50 p-5 hover:border-indigo-500/50 dark:hover:border-indigo-400/50 hover:shadow-md transition-all duration-300 cursor-pointer group"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-lg font-bold text-slate-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">
+                          {student.name || 'Unknown Student'}
+                        </h3>
+                        <span className={`px-2.5 py-1 text-xs font-bold uppercase tracking-wider rounded-lg ${getRiskBadgeColor(student.riskLevel)}`}>
+                          {student.riskLevel || 'unknown'} risk
                         </span>
-                      )}
+                      </div>
+
+                      <p className="text-sm text-slate-500 dark:text-slate-400 mb-3 flex items-center gap-2">
+                        <Mail size={14} className="text-slate-400" />
+                        {student.email}
+                      </p>
+
+                      <div className="flex items-center gap-4 text-sm text-slate-500 dark:text-slate-400">
+                        <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/50 px-2 py-1 rounded-md">
+                          <MessageCircle size={14} className="text-indigo-500" />
+                          <span className="font-medium text-slate-700 dark:text-slate-300">{student.messageCount}</span> messages
+                        </span>
+                        <span className="flex items-center gap-1.5 bg-slate-100 dark:bg-slate-800/50 px-2 py-1 rounded-md">
+                          <Users size={14} className="text-slate-500" />
+                          {cohorts.find(c => c.id === student.cohortId)?.name || 'No cohort'}
+                        </span>
+                        {student.lastMessageAt && (
+                          <span className="flex items-center gap-1.5">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                            Active {formatDate(student.lastMessageAt)}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex flex-col items-end justify-between self-stretch">
+                      <div className="p-2 rounded-full bg-slate-50 dark:bg-slate-800 group-hover:bg-indigo-50 dark:group-hover:bg-indigo-900/20 text-slate-400 group-hover:text-indigo-500 transition-colors">
+                        <ChevronRight size={20} />
+                      </div>
                     </div>
                   </div>
-
-                  <ChevronRight className="text-slate-400 group-hover:text-sky-500 transition-colors" size={20} />
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
-      </main>
+              ))}
+            </div>
+          )}
+        </div>
 
-      {/* Chat Detail Modal */}
-      <AnimatePresence>
-        {isModalOpen && selectedStudent && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
-            onClick={closeModal}
-          >
+        {/* Chat Detail Modal */}
+        <AnimatePresence>
+          {isModalOpen && selectedStudent && (
             <motion.div
-              initial={{ scale: 0.95, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              exit={{ scale: 0.95, opacity: 0 }}
-              onClick={(e) => e.stopPropagation()}
-              className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+              onClick={closeModal}
             >
-              {/* Modal Header */}
-              <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 bg-sky-500 rounded-lg flex items-center justify-center">
-                    <MessageCircle size={20} className="text-white" />
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl rounded-3xl shadow-2xl border border-slate-200/50 dark:border-slate-800/50 max-w-4xl w-full max-h-[90vh] overflow-hidden flex flex-col"
+              >
+                {/* Modal Header */}
+                <div className="px-6 py-5 border-b border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-sky-500 rounded-lg flex items-center justify-center">
+                      <MessageCircle size={20} className="text-white" />
+                    </div>
+                    <div>
+                      <h2 className="text-xl font-bold text-slate-900 dark:text-white">
+                        {selectedStudent.name || 'Unknown Student'}
+                      </h2>
+                      <p className="text-sm text-slate-600 dark:text-slate-400">{selectedStudent.email}</p>
+                    </div>
+                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${getRiskBadgeColor(selectedStudent.riskLevel)}`}>
+                      {selectedStudent.riskLevel || 'unknown'} risk
+                    </span>
                   </div>
-                  <div>
-                    <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-                      {selectedStudent.name || 'Unknown Student'}
-                    </h2>
-                    <p className="text-sm text-slate-600 dark:text-slate-400">{selectedStudent.email}</p>
-                  </div>
-                  <span className={`px-2.5 py-1 text-xs font-medium rounded-full ${getRiskBadgeColor(selectedStudent.riskLevel)}`}>
-                    {selectedStudent.riskLevel || 'unknown'} risk
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setShowMessageForm(!showMessageForm)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${
-                      showMessageForm
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setShowMessageForm(!showMessageForm)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-colors ${showMessageForm
                         ? 'bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300'
                         : 'bg-sky-500 hover:bg-sky-600 text-white'
-                    }`}
-                  >
-                    <Mail size={16} />
-                    Send Message
-                  </button>
-                  <button
-                    onClick={closeModal}
-                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                  >
-                    <X size={20} className="text-slate-600 dark:text-slate-400" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Modal Content */}
-              <div className="flex-1 overflow-y-auto p-6 space-y-6">
-                {/* Direct Message Form */}
-                <AnimatePresence>
-                  {showMessageForm && (
-                    <motion.div
-                      initial={{ height: 0, opacity: 0 }}
-                      animate={{ height: 'auto', opacity: 1 }}
-                      exit={{ height: 0, opacity: 0 }}
-                      className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-700/50 rounded-xl p-5 space-y-4"
+                        }`}
                     >
-                      <div className="flex items-center gap-2 mb-2">
-                        <Mail className="text-sky-600 dark:text-sky-400" size={18} />
-                        <h3 className="font-semibold text-slate-900 dark:text-white">Send Direct Message</h3>
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Subject</label>
-                        <input
-                          type="text"
-                          value={messageSubject}
-                          onChange={(e) => setMessageSubject(e.target.value)}
-                          placeholder="e.g., Follow-up on your concerns"
-                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Message</label>
-                        <textarea
-                          value={messageContent}
-                          onChange={(e) => setMessageContent(e.target.value)}
-                          placeholder="Write your message here..."
-                          rows={4}
-                          className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
-                        />
-                      </div>
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          onClick={() => setShowMessageForm(false)}
-                          className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          onClick={handleSendMessage}
-                          disabled={!messageSubject.trim() || !messageContent.trim() || isSendingMessage}
-                          className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors disabled:opacity-50"
-                        >
-                          {isSendingMessage ? (
-                            <LoadingSpinner size="sm" light />
-                          ) : (
-                            <Send size={16} />
-                          )}
-                          Send
-                        </button>
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* Previously Sent Messages */}
-                {getStudentMessages(selectedStudent?.email).length > 0 && (
-                  <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center gap-2 mb-4">
-                      <Mail className="text-slate-500 dark:text-slate-400" size={18} />
-                      <h3 className="font-semibold text-slate-900 dark:text-white">Sent Messages ({getStudentMessages(selectedStudent?.email).length})</h3>
-                    </div>
-                    <div className="space-y-3">
-                      {getStudentMessages(selectedStudent?.email).map(msg => (
-                        <div key={msg.id} className={`p-3 rounded-lg border ${msg.isRead ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700' : 'bg-sky-50 dark:bg-sky-900/20 border-sky-200 dark:border-sky-700/50'}`}>
-                          <div className="flex items-center justify-between mb-1">
-                            <p className="font-medium text-slate-900 dark:text-white">{msg.subject}</p>
-                            <span className={`text-xs px-2 py-0.5 rounded-full ${msg.isRead ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'}`}>
-                              {msg.isRead ? 'Read' : 'Unread'}
-                            </span>
-                          </div>
-                          <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">{msg.content}</p>
-                          <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
-                            Sent {formatDate(msg.createdAt)}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
+                      <Mail size={16} />
+                      Send Message
+                    </button>
+                    <button
+                      onClick={closeModal}
+                      className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                    >
+                      <X size={20} className="text-slate-600 dark:text-slate-400" />
+                    </button>
                   </div>
-                )}
+                </div>
 
-                {/* AI Summary */}
-                {isGeneratingSummary ? (
-                  <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
-                    <div className="flex items-center gap-3">
-                      <LoadingSpinner size="sm" />
-                      <p className="text-slate-600 dark:text-slate-400">Generating AI summary...</p>
-                    </div>
-                  </div>
-                ) : chatSummary ? (
-                  <div>
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
-                        <FileText className="text-sky-600 dark:text-sky-400" size={20} />
-                        <h3 className="font-semibold text-slate-900 dark:text-white">AI-Generated Summary</h3>
-                        {chatSummary.cachedAt && chatSummary.messageCount !== chatHistory.length && (
-                          <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
-                            Update Available
-                          </span>
-                        )}
-                      </div>
-                      <button
-                        onClick={handleRefreshSummary}
-                        disabled={isGeneratingSummary || chatHistory.length === 0}
-                        className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
-                        title="Refresh summary"
+                {/* Modal Content */}
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                  {/* Direct Message Form */}
+                  <AnimatePresence>
+                    {showMessageForm && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-700/50 rounded-xl p-5 space-y-4"
                       >
-                        <RefreshCw size={16} className={`text-slate-500 dark:text-slate-400 ${isGeneratingSummary ? 'animate-spin' : ''}`} />
-                      </button>
-                    </div>
-                    <div className="bg-gradient-to-br from-sky-50 to-purple-50 dark:from-slate-900 dark:to-slate-800 rounded-xl p-6 border border-sky-200 dark:border-slate-700">
-                      <p className="text-slate-700 dark:text-slate-300 mb-4">{chatSummary.summary}</p>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                      <div>
-                        <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Topics Discussed</p>
-                        <div className="flex flex-wrap gap-2">
-                          {chatSummary.topics?.map((topic, idx) => (
-                            <span key={idx} className="px-3 py-1 bg-white dark:bg-slate-800 rounded-full text-sm text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
-                              {topic}
-                            </span>
-                          ))}
+                        <div className="flex items-center gap-2 mb-2">
+                          <Mail className="text-sky-600 dark:text-sky-400" size={18} />
+                          <h3 className="font-semibold text-slate-900 dark:text-white">Send Direct Message</h3>
                         </div>
-                      </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Subject</label>
+                          <input
+                            type="text"
+                            value={messageSubject}
+                            onChange={(e) => setMessageSubject(e.target.value)}
+                            placeholder="e.g., Follow-up on your concerns"
+                            className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">Message</label>
+                          <textarea
+                            value={messageContent}
+                            onChange={(e) => setMessageContent(e.target.value)}
+                            placeholder="Write your message here..."
+                            rows={4}
+                            className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500 resize-none"
+                          />
+                        </div>
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => setShowMessageForm(false)}
+                            className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                          >
+                            Cancel
+                          </button>
+                          <button
+                            onClick={handleSendMessage}
+                            disabled={!messageSubject.trim() || !messageContent.trim() || isSendingMessage}
+                            className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors disabled:opacity-50"
+                          >
+                            {isSendingMessage ? (
+                              <LoadingSpinner size="sm" light />
+                            ) : (
+                              <Send size={16} />
+                            )}
+                            Send
+                          </button>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
 
-                      <div>
-                        <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Overall Sentiment</p>
-                        <p className={`text-lg font-semibold capitalize ${getSentimentColor(chatSummary.sentiment)}`}>
-                          {chatSummary.sentiment}
-                        </p>
+                  {/* Previously Sent Messages */}
+                  {getStudentMessages(selectedStudent?.email).length > 0 && (
+                    <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-5 border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center gap-2 mb-4">
+                        <Mail className="text-slate-500 dark:text-slate-400" size={18} />
+                        <h3 className="font-semibold text-slate-900 dark:text-white">Sent Messages ({getStudentMessages(selectedStudent?.email).length})</h3>
                       </div>
-                    </div>
-
-                    {/* Concerns and Recommendations side by side */}
-                    {(chatSummary.concerns?.length > 0 || chatSummary.recommendations?.length > 0) && (
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {chatSummary.concerns && chatSummary.concerns.length > 0 && (
-                          <div>
-                            <div className="flex items-center gap-2 mb-2">
-                              <AlertTriangle className="text-amber-600" size={16} />
-                              <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Concerns Identified</p>
+                      <div className="space-y-3">
+                        {getStudentMessages(selectedStudent?.email).map(msg => (
+                          <div key={msg.id} className={`p-3 rounded-lg border ${msg.isRead ? 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700' : 'bg-sky-50 dark:bg-sky-900/20 border-sky-200 dark:border-sky-700/50'}`}>
+                            <div className="flex items-center justify-between mb-1">
+                              <p className="font-medium text-slate-900 dark:text-white">{msg.subject}</p>
+                              <span className={`text-xs px-2 py-0.5 rounded-full ${msg.isRead ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' : 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'}`}>
+                                {msg.isRead ? 'Read' : 'Unread'}
+                              </span>
                             </div>
-                            <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 dark:text-slate-300">
-                              {chatSummary.concerns.map((concern, idx) => (
-                                <li key={idx}>{concern}</li>
-                              ))}
-                            </ul>
+                            <p className="text-sm text-slate-600 dark:text-slate-400 line-clamp-2">{msg.content}</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-500 mt-2">
+                              Sent {formatDate(msg.createdAt)}
+                            </p>
                           </div>
-                        )}
-
-                        {chatSummary.recommendations && chatSummary.recommendations.length > 0 && (
-                          <div>
-                            <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Recommendations</p>
-                            <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 dark:text-slate-300">
-                              {chatSummary.recommendations.map((rec, idx) => (
-                                <li key={idx}>{rec}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
+                        ))}
                       </div>
-                    )}
+                    </div>
+                  )}
 
-                    {chatSummary.riskLevel && (
-                      <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-                        <p className="text-sm text-slate-600 dark:text-slate-400">
-                          AI-Assessed Risk Level: <span className={`font-semibold capitalize ${chatSummary.riskLevel === 'high' ? 'text-red-600' : chatSummary.riskLevel === 'medium' ? 'text-amber-600' : 'text-green-600'}`}>
-                            {chatSummary.riskLevel}
-                          </span>
-                        </p>
+                  {/* AI Summary */}
+                  {isGeneratingSummary ? (
+                    <div className="bg-slate-50 dark:bg-slate-900 rounded-xl p-6 border border-slate-200 dark:border-slate-700">
+                      <div className="flex items-center gap-3">
+                        <LoadingSpinner size="sm" />
+                        <p className="text-slate-600 dark:text-slate-400">Generating AI summary...</p>
                       </div>
-                    )}
                     </div>
-                  </div>
-                ) : null}
-
-                {/* Chat History */}
-                <div>
-                  <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Chat History ({chatHistory.length} messages)</h3>
-
-                  {isLoadingChat ? (
-                    <div className="flex items-center justify-center py-12">
-                      <LoadingSpinner size="md" />
-                    </div>
-                  ) : chatHistory.length === 0 ? (
-                    <div className="text-center py-12 text-slate-500 dark:text-slate-400">
-                      No chat history available
-                    </div>
-                  ) : (
-                    <div className="space-y-4 max-h-96 overflow-y-auto">
-                      {chatHistory.map((msg, idx) => (
-                        <div
-                          key={idx}
-                          className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                  ) : chatSummary ? (
+                    <div>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <FileText className="text-sky-600 dark:text-sky-400" size={20} />
+                          <h3 className="font-semibold text-slate-900 dark:text-white">AI-Generated Summary</h3>
+                          {chatSummary.cachedAt && chatSummary.messageCount !== chatHistory.length && (
+                            <span className="px-2 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
+                              Update Available
+                            </span>
+                          )}
+                        </div>
+                        <button
+                          onClick={handleRefreshSummary}
+                          disabled={isGeneratingSummary || chatHistory.length === 0}
+                          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors disabled:opacity-50"
+                          title="Refresh summary"
                         >
-                          <div className={`max-w-[80%] rounded-xl p-4 ${
-                            msg.role === 'user'
+                          <RefreshCw size={16} className={`text-slate-500 dark:text-slate-400 ${isGeneratingSummary ? 'animate-spin' : ''}`} />
+                        </button>
+                      </div>
+                      <div className="bg-gradient-to-br from-sky-50 to-purple-50 dark:from-slate-900 dark:to-slate-800 rounded-xl p-6 border border-sky-200 dark:border-slate-700">
+                        <p className="text-slate-700 dark:text-slate-300 mb-4">{chatSummary.summary}</p>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div>
+                            <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Topics Discussed</p>
+                            <div className="flex flex-wrap gap-2">
+                              {chatSummary.topics?.map((topic, idx) => (
+                                <span key={idx} className="px-3 py-1 bg-white dark:bg-slate-800 rounded-full text-sm text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                                  {topic}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div>
+                            <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Overall Sentiment</p>
+                            <p className={`text-lg font-semibold capitalize ${getSentimentColor(chatSummary.sentiment)}`}>
+                              {chatSummary.sentiment}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Concerns and Recommendations side by side */}
+                        {(chatSummary.concerns?.length > 0 || chatSummary.recommendations?.length > 0) && (
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {chatSummary.concerns && chatSummary.concerns.length > 0 && (
+                              <div>
+                                <div className="flex items-center gap-2 mb-2">
+                                  <AlertTriangle className="text-amber-600" size={16} />
+                                  <p className="text-sm font-medium text-slate-600 dark:text-slate-400">Concerns Identified</p>
+                                </div>
+                                <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 dark:text-slate-300">
+                                  {chatSummary.concerns.map((concern, idx) => (
+                                    <li key={idx}>{concern}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+
+                            {chatSummary.recommendations && chatSummary.recommendations.length > 0 && (
+                              <div>
+                                <p className="text-sm font-medium text-slate-600 dark:text-slate-400 mb-2">Recommendations</p>
+                                <ul className="list-disc list-inside space-y-1 text-sm text-slate-700 dark:text-slate-300">
+                                  {chatSummary.recommendations.map((rec, idx) => (
+                                    <li key={idx}>{rec}</li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {chatSummary.riskLevel && (
+                          <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <p className="text-sm text-slate-600 dark:text-slate-400">
+                              AI-Assessed Risk Level: <span className={`font-semibold capitalize ${chatSummary.riskLevel === 'high' ? 'text-red-600' : chatSummary.riskLevel === 'medium' ? 'text-amber-600' : 'text-green-600'}`}>
+                                {chatSummary.riskLevel}
+                              </span>
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ) : null}
+
+                  {/* Chat History */}
+                  <div>
+                    <h3 className="font-semibold text-slate-900 dark:text-white mb-4">Chat History ({chatHistory.length} messages)</h3>
+
+                    {isLoadingChat ? (
+                      <div className="flex items-center justify-center py-12">
+                        <LoadingSpinner size="md" />
+                      </div>
+                    ) : chatHistory.length === 0 ? (
+                      <div className="text-center py-12 text-slate-500 dark:text-slate-400">
+                        No chat history available
+                      </div>
+                    ) : (
+                      <div className="space-y-4 max-h-96 overflow-y-auto">
+                        {chatHistory.map((msg, idx) => (
+                          <div
+                            key={idx}
+                            className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                          >
+                            <div className={`max-w-[80%] rounded-xl p-4 ${msg.role === 'user'
                               ? 'bg-sky-500 text-white'
                               : 'bg-slate-100 dark:bg-slate-700 text-slate-900 dark:text-slate-100'
-                          }`}>
-                            <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                              }`}>
+                              <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
+              </motion.div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          )}
+        </AnimatePresence>
       </div>
     </AdminLayout>
   );

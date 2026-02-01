@@ -16,7 +16,10 @@ import {
   onSnapshot,
   writeBatch,
   serverTimestamp,
-  Timestamp
+  Timestamp,
+  arrayUnion,
+  arrayRemove,
+  increment
 } from 'firebase/firestore';
 import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
 
@@ -665,13 +668,21 @@ export const getVoteCountsBySurvey = (surveyStatuses) => {
 // ANONYMOUS WALL
 // ===================
 
-export const subscribeToWallPosts = (callback) => {
+export const subscribeToWallPosts = (callback, limitCount = 20, sortOrder = 'desc') => {
   if (!db) {
     callback([]);
     return () => { };
   }
   const wallRef = collection(db, 'anonymous_wall');
-  const q = query(wallRef, orderBy('createdAt', 'desc'));
+
+  // Apply sorting and limit
+  // Note: Firestore requires an index for some complex queries, but simple orderBy + limit is usually fine.
+  const q = query(
+    wallRef,
+    orderBy('createdAt', sortOrder),
+    limit(limitCount)
+  );
+
   return onSnapshot(q, (snapshot) => {
     const posts = snapshot.docs.map(doc => ({
       id: doc.id,
@@ -703,6 +714,40 @@ export const submitWallPost = async (postData) => {
   } catch (error) {
     console.error('Error submitting wall post:', error);
     return null;
+  }
+};
+
+// Toggle like on a wall post (Anonymous but unique by visitorId)
+export const toggleWallPostLike = async (postId, visitorId) => {
+  if (!db || !visitorId) return false;
+  try {
+    const postRef = doc(db, 'anonymous_wall', postId);
+    const postSnap = await getDoc(postRef);
+
+    if (!postSnap.exists()) return false;
+
+    const data = postSnap.data();
+    const likedBy = data.likedBy || [];
+    const hasLiked = likedBy.includes(visitorId);
+
+    if (hasLiked) {
+      // Unlike
+      await updateDoc(postRef, {
+        likedBy: arrayRemove(visitorId),
+        likes: increment(-1)
+      });
+      return false; // Now unliked
+    } else {
+      // Like
+      await updateDoc(postRef, {
+        likedBy: arrayUnion(visitorId),
+        likes: increment(1)
+      });
+      return true; // Now liked
+    }
+  } catch (error) {
+    console.error('Error toggling like:', error);
+    return false;
   }
 };
 

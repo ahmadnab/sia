@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, X, Bell, Megaphone, Trash2, Edit2, Send, Clock, Users, AlertTriangle, Check } from 'lucide-react';
+import { Plus, X, Bell, Megaphone, Trash2, Edit2, Send, Clock, Users, AlertTriangle, Check, Sparkles } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminLayout from '../../components/AdminLayout';
 import { subscribeToAnnouncements, subscribeToCohorts, createAnnouncement, updateAnnouncement, deleteAnnouncement } from '../../services/firebase';
@@ -172,7 +172,7 @@ const AdminAnnouncements = () => {
 
   return (
     <AdminLayout>
-      <div className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
         {/* Notification Banner */}
         <AnimatePresence>
           {notification && (
@@ -180,18 +180,18 @@ const AdminAnnouncements = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className={`mb-6 p-4 rounded-xl flex items-center gap-3 ${notification.type === 'success'
-                  ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300'
-                  : notification.type === 'error'
-                    ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
-                    : 'bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-900/30 text-sky-700 dark:text-sky-300'
+              className={`mb-6 p-4 rounded-xl flex items-center gap-3 shadow-lg backdrop-blur-md ${notification.type === 'success'
+                ? 'bg-green-50/90 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300'
+                : notification.type === 'error'
+                  ? 'bg-red-50/90 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
+                  : 'bg-sky-50/90 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 text-sky-800 dark:text-sky-300'
                 }`}
             >
               <Bell size={18} />
-              <span>{notification.message}</span>
+              <span className="font-medium">{notification.message}</span>
               <button
                 onClick={() => setNotification(null)}
-                className="ml-auto p-1 hover:bg-black/5 rounded"
+                className="ml-auto p-1 hover:bg-black/5 rounded-full"
                 aria-label="Dismiss notification"
               >
                 <X size={16} aria-hidden="true" />
@@ -200,19 +200,32 @@ const AdminAnnouncements = () => {
           )}
         </AnimatePresence>
 
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Announcements</h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">Create and manage announcements for students</p>
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-rose-500 to-orange-600 p-8 shadow-xl shadow-rose-500/20">
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 blur-3xl rounded-full" />
+
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 text-rose-100 mb-2">
+                <Megaphone size={16} className="text-amber-300" />
+                <span className="text-sm font-medium tracking-wide uppercase opacity-90">Communications</span>
+              </div>
+              <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">
+                Announcements
+              </h1>
+              <p className="text-rose-100/90 text-lg max-w-xl">
+                Broadcast important updates, events, and news to student cohorts.
+              </p>
+            </div>
+            <button
+              onClick={handleOpenCreate}
+              className="flex items-center gap-2 px-6 py-3.5 bg-white text-rose-600 hover:bg-rose-50 font-bold rounded-xl shadow-lg shadow-black/10 transition-all active:scale-95"
+            >
+              <Plus size={20} />
+              <span>New Announcement</span>
+            </button>
           </div>
-          <button
-            onClick={handleOpenCreate}
-            className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors"
-          >
-            <Plus size={18} />
-            New Announcement
-          </button>
         </div>
 
         {/* Draft Announcements */}
@@ -227,18 +240,21 @@ const AdminAnnouncements = () => {
               {draftAnnouncements.map(announcement => {
                 const cohort = announcement.cohortId ? cohorts.find(c => c.id === announcement.cohortId) : null;
                 return (
-                  <div key={announcement.id} className="bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-900/30 p-5">
+                  <div key={announcement.id} className="bg-amber-50/50 dark:bg-amber-900/10 backdrop-blur-sm rounded-2xl border border-amber-200/50 dark:border-amber-800/30 p-6 transition-all hover:bg-amber-50 dark:hover:bg-amber-900/20">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-2">
-                          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{announcement.title}</h3>
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex items-center gap-1 capitalize ${getPriorityBadge(announcement.priority)}`}>
+                          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{announcement.title}</h3>
+                          <span className={`px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider rounded-lg flex items-center gap-1 ${getPriorityBadge(announcement.priority)}`}>
                             {getPriorityIcon(announcement.priority)}
                             {announcement.priority}
                           </span>
+                          <span className="px-2.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-xs font-bold uppercase tracking-wider rounded-lg border border-amber-200 dark:border-amber-800">
+                            Draft
+                          </span>
                           {cohort && (
-                            <span className="text-xs px-2 py-0.5 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-full flex items-center gap-1">
-                              <Users size={10} />
+                            <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 rounded-lg flex items-center gap-1 border border-slate-200 dark:border-slate-700">
+                              <Users size={12} />
                               {cohort.name}
                             </span>
                           )}
@@ -247,25 +263,25 @@ const AdminAnnouncements = () => {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <button
+                          onClick={() => handlePublish(announcement)}
+                          className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white text-sm font-medium rounded-xl transition-colors shadow-sm flex items-center gap-2 active:scale-95"
+                        >
+                          <Send size={14} />
+                          Publish
+                        </button>
+                        <button
                           onClick={() => handleOpenEdit(announcement)}
-                          className="p-2 hover:bg-amber-100 dark:hover:bg-amber-800/30 text-amber-700 dark:text-amber-400 rounded-lg transition-colors"
+                          className="p-2 hover:bg-amber-100/50 dark:hover:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded-lg transition-colors"
                           title="Edit"
                         >
                           <Edit2 size={16} />
                         </button>
                         <button
                           onClick={() => handleDelete(announcement.id, announcement.title)}
-                          className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-colors"
+                          className="p-2 hover:bg-red-100/50 dark:hover:bg-red-900/30 text-rose-400 hover:text-rose-600 rounded-lg transition-colors"
                           title="Delete"
                         >
                           <Trash2 size={16} />
-                        </button>
-                        <button
-                          onClick={() => handlePublish(announcement)}
-                          className="px-3 py-1.5 bg-sky-500 hover:bg-sky-600 text-white text-sm rounded-lg transition-colors flex items-center gap-1"
-                        >
-                          <Send size={14} />
-                          Publish
                         </button>
                       </div>
                     </div>
@@ -284,56 +300,76 @@ const AdminAnnouncements = () => {
           </h2>
 
           {publishedAnnouncements.length === 0 ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center shadow-sm">
-              <Megaphone className="mx-auto text-slate-300 dark:text-slate-600 mb-4" size={48} />
-              <p className="text-slate-500 dark:text-slate-400">No announcements yet. Create one to notify students.</p>
+            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[300px]">
+              <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800/50 rounded-full flex items-center justify-center mb-4">
+                <Megaphone className="text-slate-400" size={32} />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">No announcements yet</h3>
+              <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+                Create your first announcement to reach your students.
+              </p>
             </div>
           ) : (
-            <div className="grid gap-4">
+            <div className="grid gap-6">
               {publishedAnnouncements.map(announcement => {
                 const cohort = announcement.cohortId ? cohorts.find(c => c.id === announcement.cohortId) : null;
                 return (
-                  <div key={announcement.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm">
+                  <div key={announcement.id} className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group">
                     <div className="flex items-start justify-between gap-4">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap mb-2">
-                          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{announcement.title}</h3>
-                          <span className={`px-2 py-0.5 text-xs font-medium rounded-full flex items-center gap-1 capitalize ${getPriorityBadge(announcement.priority)}`}>
+                        <div className="flex items-center gap-2 flex-wrap mb-3">
+                          <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 group-hover:text-rose-600 dark:group-hover:text-rose-400 transition-colors">
+                            {announcement.title}
+                          </h3>
+                          <span className={`px-2.5 py-0.5 text-xs font-bold uppercase tracking-wider rounded-lg flex items-center gap-1 ${getPriorityBadge(announcement.priority)}`}>
                             {getPriorityIcon(announcement.priority)}
                             {announcement.priority}
                           </span>
+                          <span className="px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-bold uppercase tracking-wider rounded-lg border border-emerald-200 dark:border-emerald-800 flex items-center gap-1.5">
+                            <Check size={12} />
+                            Published
+                          </span>
+                        </div>
+
+                        <div className="prose prose-sm dark:prose-invert max-w-none text-slate-600 dark:text-slate-300 line-clamp-3 group-hover:line-clamp-none transition-all duration-500 mb-4">
+                          {announcement.content}
+                        </div>
+
+                        <div className="flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-3">
                           {cohort ? (
-                            <span className="text-xs px-2 py-0.5 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-full flex items-center gap-1">
-                              <Users size={10} />
-                              {cohort.name}
+                            <span className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-md">
+                              <Users size={12} className="text-indigo-500" />
+                              To: <span className="font-medium text-slate-700 dark:text-slate-300">{cohort.name}</span>
                             </span>
                           ) : (
-                            <span className="text-xs px-2 py-0.5 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full">
-                              All Students
+                            <span className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800/50 px-2 py-1 rounded-md">
+                              <Users size={12} className="text-green-500" />
+                              To: <span className="font-medium text-slate-700 dark:text-slate-300">All Students</span>
                             </span>
                           )}
-                        </div>
-                        <p className="text-sm text-slate-600 dark:text-slate-400 whitespace-pre-wrap">{announcement.content}</p>
-                        <div className="mt-3 flex items-center gap-4 text-xs text-slate-500 dark:text-slate-400">
-                          <span>By {announcement.authorName || 'Course Coordinator'}</span>
+                          <span className="flex items-center gap-1.5">
+                            <Clock size={12} />
+                            {formatDate(announcement.publishedAt || announcement.createdAt)}
+                          </span>
                           <span>•</span>
-                          <span>{formatDate(announcement.publishedAt || announcement.createdAt)}</span>
+                          <span>By {announcement.authorName || 'Course Coordinator'}</span>
                         </div>
                       </div>
+
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <button
                           onClick={() => handleOpenEdit(announcement)}
-                          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-lg transition-colors"
+                          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 rounded-lg transition-colors"
                           title="Edit"
                         >
-                          <Edit2 size={16} />
+                          <Edit2 size={18} />
                         </button>
                         <button
                           onClick={() => handleDelete(announcement.id, announcement.title)}
-                          className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-colors"
+                          className="p-2 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition-colors"
                           title="Delete"
                         >
-                          <Trash2 size={16} />
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     </div>
@@ -359,7 +395,7 @@ const AdminAnnouncements = () => {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
+                className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col"
               >
                 {/* Modal Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
@@ -436,12 +472,12 @@ const AdminAnnouncements = () => {
                           key={priority}
                           onClick={() => setFormData(prev => ({ ...prev, priority }))}
                           className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium capitalize transition-colors ${formData.priority === priority
-                              ? priority === 'urgent'
-                                ? 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-400'
-                                : priority === 'important'
-                                  ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400'
-                                  : 'bg-sky-100 dark:bg-sky-900/30 border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-400'
-                              : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'
+                            ? priority === 'urgent'
+                              ? 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-400'
+                              : priority === 'important'
+                                ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400'
+                                : 'bg-sky-100 dark:bg-sky-900/30 border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-400'
+                            : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'
                             }`}
                         >
                           {priority}
@@ -459,8 +495,8 @@ const AdminAnnouncements = () => {
                       <button
                         onClick={() => setFormData(prev => ({ ...prev, status: 'published' }))}
                         className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center justify-center gap-2 ${formData.status === 'published'
-                            ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400'
-                            : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'
+                          ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400'
+                          : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'
                           }`}
                       >
                         <Send size={14} />
@@ -469,8 +505,8 @@ const AdminAnnouncements = () => {
                       <button
                         onClick={() => setFormData(prev => ({ ...prev, status: 'draft' }))}
                         className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center justify-center gap-2 ${formData.status === 'draft'
-                            ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400'
-                            : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'
+                          ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400'
+                          : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'
                           }`}
                       >
                         <Clock size={14} />

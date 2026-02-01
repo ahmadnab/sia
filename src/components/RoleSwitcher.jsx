@@ -6,20 +6,20 @@ const RoleSwitcher = () => {
   const isStudent = location.pathname.startsWith('/student');
 
   return (
-    <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+    <div className="fixed top-24 right-6 z-50 flex flex-col gap-2">
       {/* Home button */}
       <Link
         to="/"
-        className="flex items-center justify-center w-12 h-12 bg-slate-700 dark:bg-slate-700 hover:bg-slate-600 dark:hover:bg-slate-600 text-white dark:text-white rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+        className="flex items-center justify-center w-12 h-12 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-full shadow-lg border border-slate-200 dark:border-slate-700 hover:scale-110 active:scale-95 transition-all duration-300"
         aria-label="Go to home"
       >
         <Home size={20} />
       </Link>
-      
+
       {/* Role switch button */}
       <Link
         to={isStudent ? '/admin' : '/student'}
-        className="flex items-center gap-2 px-4 py-3 bg-sky-500 dark:bg-sky-500 hover:bg-sky-600 dark:hover:bg-sky-600 text-white dark:text-white rounded-full shadow-lg transition-all duration-200 hover:scale-105"
+        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-full shadow-lg shadow-sky-500/30 hover:shadow-sky-500/40 hover:scale-105 active:scale-95 transition-all duration-300 backdrop-blur-md"
         aria-label={`Switch to ${isStudent ? 'Admin' : 'Student'} view`}
       >
         {isStudent ? (

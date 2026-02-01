@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Bot, Shield, MessageCircle, BarChart3, Users, ChevronRight, Menu, X } from 'lucide-react';
+import { Bot, Shield, MessageCircle, BarChart3, Users, ChevronRight, Menu, X, Megaphone } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import ThemeToggle from '../components/ThemeToggle';
 
@@ -32,7 +32,7 @@ const PublicLanding = () => {
 
         {/* Desktop Navigation */}
         <div className="hidden sm:flex items-center gap-3 md:gap-4">
-          <ThemeToggle />
+          <ThemeToggle variant="icon" />
           <Link
             to="/student"
             className="px-4 py-2.5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
@@ -41,7 +41,7 @@ const PublicLanding = () => {
           </Link>
           <Link
             to="/admin"
-            className="px-4 py-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors font-medium"
+            className="px-4 py-2.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-lg transition-all shadow-md shadow-sky-500/20 font-medium"
           >
             Admin Login
           </Link>
@@ -49,7 +49,7 @@ const PublicLanding = () => {
 
         {/* Mobile Menu Button */}
         <div className="flex sm:hidden items-center gap-2">
-          <ThemeToggle />
+          <ThemeToggle variant="icon" />
           <button
             onClick={() => setIsMobileMenuOpen(true)}
             className="p-2.5 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
@@ -138,21 +138,21 @@ const PublicLanding = () => {
             Student Inclusive Analysis
           </h1>
           <p className="text-lg sm:text-xl md:text-2xl text-slate-600 dark:text-slate-400 mt-4 sm:mt-6 max-w-3xl mx-auto">
-            Bridge the communication gap between students and administration with
-            AI-powered insights and <span className="text-teal-500 dark:text-teal-400">guaranteed anonymity</span>.
+            Bridge the communication gap with <span className="text-teal-500 dark:text-teal-400">guaranteed anonymity</span>,
+            targeted announcements, and AI-powered insights.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center mt-8 sm:mt-10">
             <Link
               to="/student"
-              className="px-6 sm:px-8 py-3.5 sm:py-4 bg-sky-500 hover:bg-sky-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="px-6 sm:px-8 py-3.5 sm:py-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-sky-500/30 flex items-center justify-center gap-2 hover:scale-105"
             >
               I'm a Student
               <ChevronRight size={20} />
             </Link>
             <Link
               to="/admin"
-              className="px-6 sm:px-8 py-3.5 sm:py-4 bg-slate-700 hover:bg-slate-600 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+              className="px-6 sm:px-8 py-3.5 sm:py-4 bg-white dark:bg-slate-800 text-slate-700 dark:text-white border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 font-semibold rounded-xl transition-all shadow-lg shadow-slate-200/20 dark:shadow-none flex items-center justify-center gap-2 hover:scale-105"
             >
               I'm a Coordinator
               <ChevronRight size={20} />
@@ -168,7 +168,7 @@ const PublicLanding = () => {
             Why Sia?
           </h2>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-2 gap-4 sm:gap-6 lg:gap-8 max-w-5xl mx-auto">
             {/* Feature 1 */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -188,7 +188,7 @@ const PublicLanding = () => {
               </p>
             </motion.div>
 
-            {/* Feature 2 */}
+            {/* Feature 2: Smart Announcements */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -197,34 +197,54 @@ const PublicLanding = () => {
               className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-2xl p-5 sm:p-6"
             >
               <div className="w-12 h-12 bg-sky-500/20 rounded-xl flex items-center justify-center mb-4">
-                <MessageCircle className="text-sky-400" size={24} />
+                <Megaphone className="text-sky-400" size={24} />
               </div>
               <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-2">
-                24/7 AI Companion
+                Smart Announcements
               </h3>
               <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
-                Get instant, personalized academic support from Sia — an AI that
-                understands your semester and learning stage.
+                Send priority alerts to specific cohorts or the entire campus instantly.
+                Keep everyone on the same page.
               </p>
             </motion.div>
 
-            {/* Feature 3 */}
+            {/* Feature 3: Community Wall */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: 0.2 }}
-              className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-2xl p-5 sm:p-6 sm:col-span-2 lg:col-span-1"
+              className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-2xl p-5 sm:p-6"
+            >
+              <div className="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center mb-4">
+                <Users className="text-indigo-400" size={24} />
+              </div>
+              <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-2">
+                Community Wall
+              </h3>
+              <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
+                A moderated, anonymous space for students to share shared experiences
+                and find peer support.
+              </p>
+            </motion.div>
+
+            {/* Feature 4: AI Companion */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.3 }}
+              className="bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-2xl p-5 sm:p-6"
             >
               <div className="w-12 h-12 bg-amber-500/20 rounded-xl flex items-center justify-center mb-4">
                 <BarChart3 className="text-amber-400" size={24} />
               </div>
               <h3 className="text-lg sm:text-xl font-semibold text-slate-900 dark:text-white mb-2">
-                Clustered Communication
+                Clustered Communication & AI
               </h3>
               <p className="text-sm sm:text-base text-slate-600 dark:text-slate-400">
-                Coordinators see aggregated insights like "80% found lectures too fast"
-                — not 100 individual complaints.
+                Coordinators see aggregated insights and key themes, while students get an AI companion
+                that understands their semester and learning stage.
               </p>
             </motion.div>
           </div>
@@ -248,7 +268,7 @@ const PublicLanding = () => {
               <ul className="space-y-3 sm:space-y-4 text-slate-700 dark:text-slate-300">
                 <li className="flex items-start gap-3">
                   <span className="text-sky-400 font-bold min-w-[1.5rem]">1.</span>
-                  <span className="text-sm sm:text-base">Click the magic link in your email — no password needed</span>
+                  <span className="text-sm sm:text-base">One-click secure login via magic link</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-sky-400 font-bold min-w-[1.5rem]">2.</span>
@@ -256,7 +276,7 @@ const PublicLanding = () => {
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-sky-400 font-bold min-w-[1.5rem]">3.</span>
-                  <span className="text-sm sm:text-base">Submit anonymous feedback on the Anonymous Wall</span>
+                  <span className="text-sm sm:text-base">Share experiences securely on the Community Wall</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-sky-400 font-bold min-w-[1.5rem]">4.</span>
@@ -274,11 +294,11 @@ const PublicLanding = () => {
               <ul className="space-y-3 sm:space-y-4 text-slate-700 dark:text-slate-300">
                 <li className="flex items-start gap-3">
                   <span className="text-teal-400 font-bold min-w-[1.5rem]">1.</span>
-                  <span className="text-sm sm:text-base">Upload your class roster via CSV</span>
+                  <span className="text-sm sm:text-base">Bulk import class rosters via CSV</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-teal-400 font-bold min-w-[1.5rem]">2.</span>
-                  <span className="text-sm sm:text-base">Create surveys with AI-generated questions</span>
+                  <span className="text-sm sm:text-base">Broadcast targeted announcements and surveys</span>
                 </li>
                 <li className="flex items-start gap-3">
                   <span className="text-teal-400 font-bold min-w-[1.5rem]">3.</span>
@@ -306,7 +326,7 @@ const PublicLanding = () => {
           </p>
           <Link
             to="/admin"
-            className="inline-flex items-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 bg-sky-500 hover:bg-sky-600 text-white font-semibold rounded-xl transition-colors"
+            className="inline-flex items-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-semibold rounded-xl transition-all shadow-lg shadow-sky-500/30 hover:scale-105"
           >
             Get Started
             <ChevronRight size={20} />

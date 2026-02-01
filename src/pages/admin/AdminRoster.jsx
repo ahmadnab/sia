@@ -1,273 +1,218 @@
 import { useState, useEffect } from 'react';
-import { Search, Download, AlertTriangle, ExternalLink } from 'lucide-react';
+import { Search, AlertTriangle, ExternalLink, Users } from 'lucide-react';
 import AdminLayout from '../../components/AdminLayout';
-import { subscribeToStudents, importMockStudents } from '../../services/firebase';
+import { subscribeToStudents } from '../../services/firebase';
 import { useApp } from '../../context/AppContext';
-import LoadingSpinner from '../../components/LoadingSpinner';
+
 
 const AdminRoster = () => {
   const { configStatus } = useApp();
   const [students, setStudents] = useState([]);
   const [search, setSearch] = useState('');
   const [filterRisk, setFilterRisk] = useState('all');
-  const [isImporting, setIsImporting] = useState(false);
-  const [importSuccess, setImportSuccess] = useState(false);
+
 
   useEffect(() => {
     const unsubscribe = subscribeToStudents(setStudents);
     return () => unsubscribe();
   }, []);
 
-  const handleImportMockData = async () => {
-    if (!configStatus.firebase) {
-      alert('Firebase not configured. Add your Firebase keys to .env first.');
-      return;
-    }
 
-    setIsImporting(true);
-    try {
-      const success = await importMockStudents();
-      if (success) {
-        setImportSuccess(true);
-        setTimeout(() => setImportSuccess(false), 3000);
-      }
-    } catch (error) {
-      console.error('Import error:', error);
-    }
-    setIsImporting(false);
-  };
 
   // Filter students
   const filteredStudents = students.filter(student => {
     const matchesSearch = student.name?.toLowerCase().includes(search.toLowerCase()) ||
-                          student.email?.toLowerCase().includes(search.toLowerCase());
+      student.email?.toLowerCase().includes(search.toLowerCase());
     const matchesRisk = filterRisk === 'all' || student.riskLevel === filterRisk;
     return matchesSearch && matchesRisk;
   });
 
   const getRiskBadge = (level) => {
     const styles = {
-      low: 'bg-green-50 dark:bg-green-900/20 text-green-600 dark:text-green-400 border-green-100 dark:border-green-900/30',
-      medium: 'bg-amber-50 dark:bg-amber-900/20 text-amber-600 dark:text-amber-400 border-amber-100 dark:border-amber-900/30',
-      high: 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border-red-100 dark:border-red-900/30',
+      low: 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20',
+      medium: 'bg-amber-50 dark:bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-500/20',
+      high: 'bg-rose-50 dark:bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-500/20',
       unknown: 'bg-slate-50 dark:bg-slate-700/50 text-slate-600 dark:text-slate-400 border-slate-200 dark:border-slate-600'
-    };
-    return styles[level] || styles.unknown;
-  };
-
-  const getRiskCardStyle = (level) => {
-    const styles = {
-      low: 'border-l-green-500',
-      medium: 'border-l-amber-500',
-      high: 'border-l-red-500',
-      unknown: 'border-l-slate-400'
     };
     return styles[level] || styles.unknown;
   };
 
   return (
     <AdminLayout>
-      <div className="p-4 sm:p-6 lg:p-8">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-900 dark:text-slate-100">Student Roster</h1>
-            <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mt-1">{students.length} students enrolled</p>
+      <div className="p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 to-violet-700 p-8 shadow-xl shadow-indigo-500/20">
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 blur-3xl rounded-full" />
+
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 text-indigo-100 mb-2">
+                <Users size={16} className="text-amber-300" />
+                <span className="text-sm font-medium tracking-wide uppercase opacity-90">Student Management</span>
+              </div>
+              <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">
+                Student Roster
+              </h1>
+              <p className="text-indigo-100/80 text-lg max-w-xl">
+                Manage your {students.length} enrolled students, track their milestones, and monitor academic risk levels.
+              </p>
+            </div>
+
+
           </div>
-          <button
-            onClick={handleImportMockData}
-            disabled={isImporting}
-            className="flex items-center justify-center gap-2 px-4 py-2.5 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 rounded-lg transition-colors disabled:opacity-50 text-sm sm:text-base"
-          >
-            {isImporting ? (
-              <LoadingSpinner size="sm" />
-            ) : (
-              <Download size={18} />
-            )}
-            <span className="whitespace-nowrap">Import Mock Data</span>
-          </button>
         </div>
 
-        {/* Success Message */}
-        {importSuccess && (
-          <div className="mb-6 p-3 sm:p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300 rounded-lg text-sm sm:text-base">
-            Successfully imported 10 mock students!
-          </div>
-        )}
 
-        {/* Filters */}
-        <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-3 sm:p-4 mb-6 shadow-sm">
-          <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+
+        {/* Filters Bar */}
+        <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-4 shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-4">
             {/* Search */}
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
+            <div className="flex-1 relative group">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 group-focus-within:text-indigo-500 transition-colors" size={18} />
               <input
                 type="text"
                 placeholder="Search by name or email..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-10 pr-4 py-2.5 sm:py-2 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-slate-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent placeholder:text-slate-400 dark:placeholder:text-slate-500 text-sm sm:text-base"
+                className="w-full pl-10 pr-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all placeholder:text-slate-400 dark:text-white"
               />
             </div>
 
             {/* Risk Filter */}
-            <select
-              value={filterRisk}
-              onChange={(e) => setFilterRisk(e.target.value)}
-              className="px-4 py-2.5 sm:py-2 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 text-sm sm:text-base"
-            >
-              <option value="all">All Risk Levels</option>
-              <option value="low">Low Risk</option>
-              <option value="medium">Medium Risk</option>
-              <option value="high">High Risk</option>
-              <option value="unknown">Unknown (No GPA)</option>
-            </select>
+            <div className="relative">
+              <select
+                value={filterRisk}
+                onChange={(e) => setFilterRisk(e.target.value)}
+                className="w-full sm:w-48 appearance-none px-4 py-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all text-slate-700 dark:text-slate-200"
+              >
+                <option value="all">All Risk Levels</option>
+                <option value="low">Low Risk</option>
+                <option value="medium">Medium Risk</option>
+                <option value="high">High Risk</option>
+                <option value="unknown">Unknown</option>
+              </select>
+            </div>
           </div>
         </div>
 
-        {/* Empty State */}
+        {/* Content Area */}
         {filteredStudents.length === 0 ? (
-          <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-8 sm:p-12 text-center">
-            <AlertTriangle className="mx-auto text-slate-300 dark:text-slate-600 mb-4" size={48} />
-            <h3 className="text-lg font-medium text-slate-900 dark:text-slate-100">No students found</h3>
-            <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mt-1">
-              {students.length === 0
-                ? 'Import mock data or add students to get started.'
-                : 'Try adjusting your search or filter.'}
+          <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-12 text-center flex flex-col items-center justify-center min-h-[300px]">
+            <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800/50 rounded-full flex items-center justify-center mb-4">
+              <Search className="text-slate-400" size={32} />
+            </div>
+            <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-2">No students found</h3>
+            <p className="text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+              We couldn't find any students matching your search. Try adjusting your filters or import new data.
             </p>
           </div>
         ) : (
-          <>
-            {/* Mobile Card View */}
-            <div className="md:hidden space-y-3">
-              {filteredStudents.map((student) => (
-                <div
-                  key={student.id}
-                  className={`bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm p-4 border-l-4 ${getRiskCardStyle(student.riskLevel)}`}
-                >
-                  <div className="flex items-start justify-between gap-3 mb-3">
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="w-10 h-10 bg-sky-100 dark:bg-sky-900/30 rounded-full flex items-center justify-center flex-shrink-0">
-                        <span className="text-sky-600 dark:text-sky-400 font-medium">
-                          {student.name?.charAt(0) || '?'}
+          <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-sm overflow-hidden">
+            {/* Desktop Table */}
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-slate-50/50 dark:bg-slate-800/30 border-b border-slate-200/50 dark:border-slate-800/50">
+                  <tr>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Student</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Milestone</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">GPA</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Risk Level</th>
+                    <th className="px-6 py-4 text-left text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Portfolio</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200/50 dark:divide-slate-800/50">
+                  {filteredStudents.map((student) => (
+                    <tr
+                      key={student.id}
+                      className="group hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors"
+                    >
+                      <td className="px-6 py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 bg-gradient-to-br from-indigo-100 to-violet-100 dark:from-indigo-900/30 dark:to-violet-900/30 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold shadow-sm group-hover:scale-110 transition-transform">
+                            {student.name?.charAt(0) || '?'}
+                          </div>
+                          <div>
+                            <p className="font-semibold text-slate-900 dark:text-white">{student.name}</p>
+                            <p className="text-sm text-slate-500 dark:text-slate-400">{student.email}</p>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="inline-flex px-2.5 py-1 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-sm font-medium border border-slate-200 dark:border-slate-700">
+                          {student.milestone || 'N/A'}
                         </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {student.gpa != null ? (
+                          <span className={`font-bold ${student.gpa >= 3.5 ? 'text-emerald-600 dark:text-emerald-400' :
+                            student.gpa >= 2.5 ? 'text-amber-600 dark:text-amber-400' : 'text-rose-600 dark:text-rose-400'
+                            }`}>
+                            {student.gpa.toFixed(1)}
+                          </span>
+                        ) : (
+                          <span className="text-slate-400 italic">--</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className={`px-3 py-1 text-xs font-bold rounded-full border shadow-sm ${getRiskBadge(student.riskLevel)}`}>
+                          {student.riskLevel?.charAt(0).toUpperCase() + student.riskLevel?.slice(1) || 'Unknown'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4">
+                        {student.portfolioLink ? (
+                          <a
+                            href={student.portfolioLink}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 transition-colors"
+                          >
+                            View <ExternalLink size={14} />
+                          </a>
+                        ) : (
+                          <span className="text-slate-400 text-sm opacity-50">No link</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Mobile Cards (Custom Grid for mobile) */}
+            <div className="md:hidden divide-y divide-slate-200/50 dark:divide-slate-800/50">
+              {filteredStudents.map((student) => (
+                <div key={student.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 bg-indigo-50 dark:bg-indigo-900/20 rounded-full flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-100 dark:border-indigo-800">
+                        {student.name?.charAt(0) || '?'}
                       </div>
-                      <div className="min-w-0">
-                        <p className="font-medium text-slate-900 dark:text-slate-100 truncate">{student.name}</p>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 truncate">{student.email}</p>
+                      <div>
+                        <p className="font-semibold text-slate-900 dark:text-white">{student.name}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">{student.email}</p>
                       </div>
                     </div>
-                    <span className={`px-2.5 py-1 text-xs font-medium rounded-full border whitespace-nowrap ${getRiskBadge(student.riskLevel)}`}>
-                      {student.riskLevel?.charAt(0).toUpperCase() + student.riskLevel?.slice(1) || 'Unknown'}
+                    <span className={`px-2 py-0.5 text-[10px] font-bold rounded-full border ${getRiskBadge(student.riskLevel)}`}>
+                      {student.riskLevel?.toUpperCase() || 'UNKNOWN'}
                     </span>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-500 dark:text-slate-400">Milestone:</span>
-                      <span className="text-slate-700 dark:text-slate-300">{student.milestone || 'N/A'}</span>
+                  <div className="grid grid-cols-2 gap-2 text-sm">
+                    <div className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700/50">
+                      <span className="text-xs text-slate-400 block mb-0.5">GPA</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-200">{student.gpa?.toFixed(1) || 'N/A'}</span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-500 dark:text-slate-400">GPA:</span>
-                      {student.gpa != null ? (
-                        <span className={`font-medium ${
-                          student.gpa >= 3.5 ? 'text-green-600 dark:text-green-400' :
-                          student.gpa >= 2.5 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'
-                        }`}>
-                          {student.gpa.toFixed(1)}
-                        </span>
-                      ) : (
-                        <span className="text-slate-400 dark:text-slate-500 italic">N/A</span>
-                      )}
+                    <div className="bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700/50">
+                      <span className="text-xs text-slate-400 block mb-0.5">Milestone</span>
+                      <span className="font-medium text-slate-700 dark:text-slate-200 truncate">{student.milestone || 'N/A'}</span>
                     </div>
-                    {student.portfolioLink && (
-                      <a
-                        href={student.portfolioLink}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-sky-500 dark:text-sky-400 hover:text-sky-600 dark:hover:text-sky-300 flex items-center gap-1"
-                      >
-                        Portfolio <ExternalLink size={14} />
-                      </a>
-                    )}
                   </div>
                 </div>
               ))}
             </div>
-
-            {/* Desktop Table View */}
-            <div className="hidden md:block bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
-              <div className="overflow-x-auto" role="region" aria-label="Students table">
-                <table className="w-full" aria-describedby="roster-caption">
-                  <caption id="roster-caption" className="sr-only">
-                    List of students with their milestone, GPA, risk level, and portfolio status
-                  </caption>
-                  <thead>
-                    <tr className="bg-slate-50 dark:bg-slate-700/50 border-b border-slate-200 dark:border-slate-700">
-                      <th scope="col" className="text-left px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Student</th>
-                      <th scope="col" className="text-left px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Milestone</th>
-                      <th scope="col" className="text-left px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">GPA</th>
-                      <th scope="col" className="text-left px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Risk Level</th>
-                      <th scope="col" className="text-left px-6 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide">Portfolio</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
-                    {filteredStudents.map((student) => (
-                      <tr key={student.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
-                        <td className="px-6 py-4">
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-sky-100 dark:bg-sky-900/30 rounded-full flex items-center justify-center">
-                              <span className="text-sky-600 dark:text-sky-400 font-medium">
-                                {student.name?.charAt(0) || '?'}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="font-medium text-slate-900 dark:text-slate-100">{student.name}</p>
-                              <p className="text-sm text-slate-500 dark:text-slate-400">{student.email}</p>
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className="text-slate-700 dark:text-slate-300">{student.milestone || 'N/A'}</span>
-                        </td>
-                        <td className="px-6 py-4">
-                          {student.gpa != null ? (
-                            <span className={`font-medium ${
-                              student.gpa >= 3.5 ? 'text-green-600 dark:text-green-400' :
-                              student.gpa >= 2.5 ? 'text-amber-600 dark:text-amber-400' : 'text-red-600 dark:text-red-400'
-                            }`}>
-                              {student.gpa.toFixed(1)}
-                            </span>
-                          ) : (
-                            <span className="text-slate-400 dark:text-slate-500 italic">Not provided</span>
-                          )}
-                        </td>
-                        <td className="px-6 py-4">
-                          <span className={`px-3 py-1 text-xs font-medium rounded-full border ${getRiskBadge(student.riskLevel)}`}>
-                            {student.riskLevel?.charAt(0).toUpperCase() + student.riskLevel?.slice(1) || 'Unknown'}
-                          </span>
-                        </td>
-                        <td className="px-6 py-4">
-                          {student.portfolioLink ? (
-                            <a
-                              href={student.portfolioLink}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-sky-500 dark:text-sky-400 hover:text-sky-600 dark:hover:text-sky-300 flex items-center gap-1"
-                            >
-                              View <ExternalLink size={14} />
-                            </a>
-                          ) : (
-                            <span className="text-slate-400 dark:text-slate-500">—</span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-          </>
+          </div>
         )}
       </div>
     </AdminLayout>

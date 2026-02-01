@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, FileText, Calendar, MessageSquare } from 'lucide-react';
+import { ArrowLeft, FileText, Calendar, MessageSquare, Users } from 'lucide-react';
 import { getStudentResponses, subscribeToSurveys } from '../../services/firebase';
 import { useApp } from '../../context/AppContext';
 import { SkeletonResponse } from '../../components/Skeleton';
+import ThemeToggle from '../../components/ThemeToggle';
 
 const StudentResponses = () => {
   const { configStatus } = useApp();
@@ -119,6 +120,19 @@ const StudentResponses = () => {
             <h1 className="text-xl font-bold text-slate-900 dark:text-white">My Survey Responses</h1>
             <p className="text-sm text-slate-600 dark:text-slate-400">{studentEmail}</p>
           </div>
+          <div className="ml-auto flex items-center gap-3">
+            <Link
+              to="/admin"
+              className="group p-2 hover:px-3 flex items-center gap-0 hover:gap-2 text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 bg-slate-100 dark:bg-slate-700 rounded-lg transition-all hover:scale-105 active:scale-95 hidden sm:flex items-center justify-center"
+              title="Switch to Admin"
+            >
+              <Users size={20} />
+              <span className="max-w-0 overflow-hidden group-hover:max-w-xs transition-all duration-300 ease-in-out whitespace-nowrap text-sm font-medium opacity-0 group-hover:opacity-100">
+                Switch to Admin
+              </span>
+            </Link>
+            <ThemeToggle variant="icon" />
+          </div>
         </div>
       </header>
 
@@ -137,7 +151,7 @@ const StudentResponses = () => {
             <p className="text-slate-500 dark:text-slate-400 mb-6">You haven't submitted any surveys yet.</p>
             <Link
               to="/student"
-              className="inline-block px-6 py-3 bg-sky-500 hover:bg-sky-600 text-white rounded-lg font-medium transition-colors"
+              className="inline-block px-6 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-lg font-medium transition-all shadow-lg shadow-sky-500/20 active:scale-95"
             >
               Take a Survey
             </Link>

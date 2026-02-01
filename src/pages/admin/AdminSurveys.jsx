@@ -324,7 +324,7 @@ const AdminSurveys = () => {
 
   return (
     <AdminLayout>
-      <div className="p-6 lg:p-8">
+      <div className="p-6 lg:p-8 space-y-8 max-w-7xl mx-auto">
         {/* Notification Banner */}
         <AnimatePresence>
           {notification && (
@@ -332,18 +332,18 @@ const AdminSurveys = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className={`mb-6 p-4 rounded-xl flex items-center gap-3 ${notification.type === 'success'
-                ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300'
+              className={`mb-6 p-4 rounded-xl flex items-center gap-3 shadow-lg backdrop-blur-md ${notification.type === 'success'
+                ? 'bg-green-50/90 dark:bg-green-900/30 border border-green-200 dark:border-green-800 text-green-800 dark:text-green-300'
                 : notification.type === 'error'
-                  ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
-                  : 'bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-900/30 text-sky-700 dark:text-sky-300'
+                  ? 'bg-red-50/90 dark:bg-red-900/30 border border-red-200 dark:border-red-800 text-red-800 dark:text-red-300'
+                  : 'bg-sky-50/90 dark:bg-sky-900/30 border border-sky-200 dark:border-sky-800 text-sky-800 dark:text-sky-300'
                 }`}
             >
               <Bell size={18} />
-              <span>{notification.message}</span>
+              <span className="font-medium">{notification.message}</span>
               <button
                 onClick={() => setNotification(null)}
-                className="ml-auto p-1 hover:bg-black/5 rounded"
+                className="ml-auto p-1 hover:bg-black/5 rounded-full"
               >
                 <X size={16} />
               </button>
@@ -351,19 +351,32 @@ const AdminSurveys = () => {
           )}
         </AnimatePresence>
 
-        {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Survey Manager</h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">Create and manage anonymous surveys</p>
+        {/* Hero Section */}
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-600 to-blue-700 p-8 shadow-xl shadow-sky-500/20">
+          <div className="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-20" />
+          <div className="absolute -top-24 -right-24 w-96 h-96 bg-white/10 blur-3xl rounded-full" />
+
+          <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 text-sky-100 mb-2">
+                <MessageSquare size={16} className="text-sky-200" />
+                <span className="text-sm font-medium tracking-wide uppercase opacity-90">Student Feedback</span>
+              </div>
+              <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">
+                Survey Manager
+              </h1>
+              <p className="text-sky-100/90 text-lg max-w-xl">
+                Create, manage, and analyze student surveys to gather meaningful insights.
+              </p>
+            </div>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 px-6 py-3.5 bg-white text-sky-600 hover:bg-sky-50 font-bold rounded-xl shadow-lg shadow-black/10 transition-all active:scale-95"
+            >
+              <Plus size={20} />
+              <span>Create Survey</span>
+            </button>
           </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors"
-          >
-            <Plus size={18} />
-            Create Survey
-          </button>
         </div>
 
         {/* Draft Surveys */}
@@ -379,31 +392,33 @@ const AdminSurveys = () => {
                 const isExpanded = expandedSurveys.has(survey.id);
                 const questionsToShow = isExpanded ? survey.questions : survey.questions?.slice(0, 3);
                 return (
-                  <div key={survey.id} className="bg-amber-50 dark:bg-amber-900/20 rounded-xl border border-amber-200 dark:border-amber-900/30 p-6">
+                  <div key={survey.id} className="bg-amber-50/50 dark:bg-amber-900/10 backdrop-blur-sm rounded-2xl border border-amber-200/50 dark:border-amber-800/30 p-6 transition-all hover:bg-amber-50 dark:hover:bg-amber-900/20">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{survey.title}</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-                          {survey.questions?.length || 0} questions
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">{survey.title}</h3>
+                          <span className="px-2.5 py-0.5 bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-400 text-xs font-semibold rounded-full border border-amber-200 dark:border-amber-800">
+                            Draft
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          {survey.questions?.length || 0} questions • Created recently
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-xs font-medium rounded-full">
-                          Draft
-                        </span>
-                        <button
-                          onClick={() => handleDeleteSurvey(survey.id, survey.title)}
-                          className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-colors"
-                          title="Delete draft"
-                        >
-                          <Trash2 size={16} />
-                        </button>
                         <button
                           onClick={() => handlePublishSurvey(survey.id)}
-                          className="px-3 py-1 bg-sky-500 hover:bg-sky-600 text-white text-sm rounded-lg transition-colors flex items-center gap-1"
+                          className="px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white text-sm font-medium rounded-xl transition-colors shadow-sm flex items-center gap-2 active:scale-95"
                         >
                           <Send size={14} />
                           Publish
+                        </button>
+                        <button
+                          onClick={() => handleDeleteSurvey(survey.id, survey.title)}
+                          className="p-2 hover:bg-red-100/50 dark:hover:bg-red-900/30 text-slate-400 hover:text-red-500 dark:text-slate-500 dark:hover:text-red-400 rounded-lg transition-colors"
+                          title="Delete draft"
+                        >
+                          <Trash2 size={18} />
                         </button>
                       </div>
                     </div>
@@ -455,8 +470,12 @@ const AdminSurveys = () => {
           </h2>
 
           {activeSurveys.length === 0 ? (
-            <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center shadow-sm">
-              <p className="text-slate-500 dark:text-slate-400">No active surveys. Create one to start collecting feedback.</p>
+            <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-8 text-center flex flex-col items-center justify-center min-h-[200px]">
+              <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mb-4">
+                <Clock className="text-slate-400" size={24} />
+              </div>
+              <p className="text-slate-500 dark:text-slate-400 font-medium">No active surveys.</p>
+              <p className="text-sm text-slate-400 mt-1">Create a new survey to start collecting feedback.</p>
             </div>
           ) : (
             <div className="grid gap-4">
@@ -467,55 +486,65 @@ const AdminSurveys = () => {
                 const isExpanded = expandedSurveys.has(survey.id);
                 const questionsToShow = isExpanded ? survey.questions : survey.questions?.slice(0, 3);
                 return (
-                  <div key={survey.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+                  <div key={survey.id} className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl p-6 shadow-sm hover:shadow-md transition-all duration-300 group">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{survey.title}</h3>
-                        <div className="flex items-center gap-2 mt-1 flex-wrap">
-                          <p className="text-sm text-slate-500 dark:text-slate-400">
-                            {survey.questions?.length || 0} questions
-                          </p>
+                        <div className="flex items-center gap-2 mb-1">
+                          <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
+                            {survey.title}
+                          </h3>
+                          <span className="px-2.5 py-0.5 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-xs font-semibold rounded-full border border-emerald-200 dark:border-emerald-800 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                            Active
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-4 flex-wrap mt-2">
+                          <div className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+                            <FileText size={14} className="text-sky-500" />
+                            <span>{survey.questions?.length || 0} questions</span>
+                          </div>
+
                           {cohort && (
-                            <span className="text-xs px-2 py-0.5 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-full flex items-center gap-1">
-                              <Users size={10} />
-                              {cohort.name}
-                            </span>
+                            <div className="flex items-center gap-1.5 text-sm text-slate-500 dark:text-slate-400">
+                              <Users size={14} className="text-indigo-500" />
+                              <span>{cohort.name}</span>
+                            </div>
                           )}
                         </div>
                       </div>
+
                       <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-full">
-                          Active
-                        </span>
                         <button
                           onClick={() => handleViewResponses(survey)}
-                          className="px-3 py-1 bg-sky-100 dark:bg-sky-900/30 hover:bg-sky-200 dark:hover:bg-sky-800/50 text-sky-700 dark:text-sky-300 text-sm rounded-lg transition-colors flex items-center gap-1"
+                          className="px-4 py-2 bg-sky-50 dark:bg-sky-900/20 hover:bg-sky-100 dark:hover:bg-sky-900/40 text-sky-700 dark:text-sky-300 text-sm font-medium rounded-xl transition-colors flex items-center gap-2 border border-sky-200/50 dark:border-sky-800/50"
                         >
-                          <FileText size={14} />
-                          Responses
+                          <BarChart3 size={16} />
+                          Analysis
                         </button>
                         <button
                           onClick={() => handleCloseSurvey(survey.id)}
-                          className="px-3 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-sm rounded-lg transition-colors"
+                          className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 rounded-lg transition-colors"
+                          title="Close Survey"
                         >
-                          Close
+                          <Archive size={18} />
                         </button>
                       </div>
                     </div>
 
                     {/* Publish Info */}
                     {(publishedDate || notifiedDate) && (
-                      <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
+                      <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap gap-4 text-xs text-slate-500 dark:text-slate-400">
                         {publishedDate && (
-                          <span className="flex items-center gap-1">
-                            <Calendar size={12} />
+                          <span className="flex items-center gap-1.5">
+                            <Calendar size={12} className="text-slate-400" />
                             Published {publishedDate.toLocaleDateString()}
                           </span>
                         )}
                         {notifiedDate && (
-                          <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                          <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 px-2 py-0.5 rounded-md">
                             <Mail size={12} />
-                            Notified (simulated)
+                            Notified
                           </span>
                         )}
                       </div>
@@ -523,30 +552,30 @@ const AdminSurveys = () => {
 
                     {/* Questions Preview */}
                     {survey.questions && survey.questions.length > 0 && (
-                      <div className="mt-4 space-y-2">
+                      <div className="mt-4 space-y-2 bg-slate-50/50 dark:bg-slate-800/30 rounded-xl p-4 border border-slate-100 dark:border-slate-800/50">
                         {questionsToShow?.map((q, i) => (
-                          <div key={i} className="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
-                            <span className="text-slate-400 dark:text-slate-500 font-medium min-w-[20px]">{i + 1}.</span>
-                            <span className="flex-1">{q.question || <span className="text-slate-400 dark:text-slate-500 italic">No question text</span>}</span>
-                            <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                              ({q.type === 'scale' ? 'Scale' : 'Text'})
+                          <div key={i} className="text-sm text-slate-700 dark:text-slate-300 flex items-start gap-2.5">
+                            <span className="text-slate-400 dark:text-slate-500 font-mono text-xs mt-0.5">{i + 1}.</span>
+                            <span className="flex-1">{q.question || <span className="text-slate-400 italic">No question text</span>}</span>
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                              {q.type === 'scale' ? 'Scale' : 'Text'}
                             </span>
                           </div>
                         ))}
                         {survey.questions.length > 3 && (
                           <button
                             onClick={() => toggleSurveyExpansion(survey.id)}
-                            className="text-sm text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 flex items-center gap-1 mt-2"
+                            className="text-xs font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 flex items-center gap-1 mt-3 w-full justify-center py-1 hover:bg-sky-50 dark:hover:bg-sky-900/20 rounded-lg transition-colors"
                           >
                             {isExpanded ? (
                               <>
-                                <ChevronUp size={16} />
+                                <ChevronUp size={14} />
                                 Show less
                               </>
                             ) : (
                               <>
-                                <ChevronDown size={16} />
-                                Show {survey.questions.length - 3} more question{survey.questions.length - 3 !== 1 ? 's' : ''}
+                                <ChevronDown size={14} />
+                                Show {survey.questions.length - 3} more
                               </>
                             )}
                           </button>
@@ -573,28 +602,30 @@ const AdminSurveys = () => {
                 const isExpanded = expandedSurveys.has(survey.id);
                 const questionsToShow = isExpanded ? survey.questions : survey.questions?.slice(0, 3);
                 return (
-                  <div key={survey.id} className="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 p-6">
+                  <div key={survey.id} className="bg-slate-50/80 dark:bg-slate-800/40 backdrop-blur-sm rounded-xl border border-slate-200 dark:border-slate-700 p-6 grayscale-[0.5] hover:grayscale-0 transition-all duration-300">
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
-                        <h3 className="font-semibold text-slate-700 dark:text-slate-300">{survey.title}</h3>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-semibold text-slate-600 dark:text-slate-400">{survey.title}</h3>
+                          <span className="px-2 py-0.5 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400 text-[10px] font-bold uppercase tracking-wider rounded">
+                            Closed
+                          </span>
+                        </div>
+                        <p className="text-sm text-slate-500 dark:text-slate-500 mt-1">
                           {survey.questions?.length || 0} questions
                         </p>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="px-3 py-1 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-medium rounded-full">
-                          Closed
-                        </span>
                         <button
                           onClick={() => handleViewResponses(survey)}
-                          className="px-3 py-1 bg-sky-100 dark:bg-sky-900/30 hover:bg-sky-200 dark:hover:bg-sky-800/50 text-sky-700 dark:text-sky-300 text-sm rounded-lg transition-colors flex items-center gap-1"
+                          className="px-3 py-1.5 bg-white dark:bg-slate-700 border border-slate-200 dark:border-slate-600 hover:border-sky-300 dark:hover:border-sky-700 text-slate-600 dark:text-slate-300 hover:text-sky-600 dark:hover:text-sky-400 text-sm rounded-lg transition-colors flex items-center gap-2 shadow-sm"
                         >
-                          <FileText size={14} />
-                          Responses
+                          <BarChart3 size={14} />
+                          Results
                         </button>
                         <button
                           onClick={() => handleDeleteSurvey(survey.id, survey.title)}
-                          className="p-2 hover:bg-red-100 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 rounded-lg transition-colors"
+                          className="p-1.5 hover:bg-red-50 dark:hover:bg-red-900/20 text-slate-400 hover:text-red-500 rounded-lg transition-colors"
                           title="Delete closed survey"
                         >
                           <Trash2 size={16} />
@@ -656,7 +687,7 @@ const AdminSurveys = () => {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
+                className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col"
               >
                 {/* Modal Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
@@ -992,7 +1023,7 @@ const AdminSurveys = () => {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.95, opacity: 0 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-4xl max-h-[85vh] overflow-hidden"
+                className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-2xl border border-slate-200/50 dark:border-slate-800/50 rounded-2xl shadow-2xl w-full max-w-4xl max-h-[85vh] overflow-hidden flex flex-col"
               >
                 {/* Modal Header */}
                 <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
@@ -1035,7 +1066,7 @@ const AdminSurveys = () => {
                 )}
 
                 {/* Modal Body */}
-                <div className="p-6 overflow-y-auto max-h-[calc(85vh-200px)]">
+                <div className="p-6 flex-1 overflow-y-auto custom-scrollbar">
                   {isLoadingResponses ? (
                     <div className="flex items-center justify-center py-20">
                       <LoadingSpinner size="lg" />
@@ -1051,71 +1082,90 @@ const AdminSurveys = () => {
                     <div className="space-y-6">
                       {/* Summary Stats */}
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-sky-50 dark:bg-sky-900/20 rounded-xl p-4 border border-sky-100 dark:border-sky-900/30">
-                          <div className="flex items-center gap-2 text-sky-600 dark:text-sky-400 mb-2">
-                            <FileText size={18} />
-                            <span className="text-sm font-medium">Total Responses</span>
+                        <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl p-5 border border-slate-200/50 dark:border-slate-800/50 shadow-sm relative overflow-hidden group">
+                          <div className="absolute top-0 right-0 w-24 h-24 bg-sky-500/10 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150" />
+                          <div className="relative z-10">
+                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2">
+                              <FileText size={18} className="text-sky-500" />
+                              <span className="text-sm font-medium">Total Responses</span>
+                            </div>
+                            <p className="text-3xl font-bold text-slate-900 dark:text-white">{surveyResponses.length}</p>
                           </div>
-                          <p className="text-3xl font-bold text-sky-700 dark:text-sky-300">{surveyResponses.length}</p>
                         </div>
-                        <div className="bg-purple-50 dark:bg-purple-900/20 rounded-xl p-4 border border-purple-100 dark:border-purple-900/30">
-                          <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-2">
-                            <Tag size={18} />
-                            <span className="text-sm font-medium">Themes Identified</span>
+
+                        <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl p-5 border border-slate-200/50 dark:border-slate-800/50 shadow-sm relative overflow-hidden group">
+                          <div className="absolute top-0 right-0 w-24 h-24 bg-purple-500/10 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150" />
+                          <div className="relative z-10">
+                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2">
+                              <Tag size={18} className="text-purple-500" />
+                              <span className="text-sm font-medium">Themes Identified</span>
+                            </div>
+                            <p className="text-3xl font-bold text-slate-900 dark:text-white">
+                              {themeAnalysis?.themes?.length || '—'}
+                            </p>
                           </div>
-                          <p className="text-3xl font-bold text-purple-700 dark:text-purple-300">
-                            {themeAnalysis?.themes?.length || '—'}
-                          </p>
                         </div>
-                        <div className="bg-teal-50 dark:bg-teal-900/20 rounded-xl p-4 border border-teal-100 dark:border-teal-900/30">
-                          <div className="flex items-center gap-2 text-teal-600 dark:text-teal-400 mb-2">
-                            <TrendingUp size={18} />
-                            <span className="text-sm font-medium">Avg Sentiment</span>
+
+                        <div className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-xl rounded-2xl p-5 border border-slate-200/50 dark:border-slate-800/50 shadow-sm relative overflow-hidden group">
+                          <div className="absolute top-0 right-0 w-24 h-24 bg-teal-500/10 rounded-full blur-2xl -mr-10 -mt-10 transition-transform group-hover:scale-150" />
+                          <div className="relative z-10">
+                            <div className="flex items-center gap-2 text-slate-500 dark:text-slate-400 mb-2">
+                              <TrendingUp size={18} className="text-teal-500" />
+                              <span className="text-sm font-medium">Avg Sentiment</span>
+                            </div>
+                            <p className={`text-3xl font-bold ${themeAnalysis?.themeSentiments?.length > 0
+                              ? getSentimentColor(Math.round(themeAnalysis.themeSentiments.reduce((a, b) => a + b.sentiment, 0) / themeAnalysis.themeSentiments.length))
+                              : 'text-slate-900 dark:text-white'
+                              }`}>
+                              {themeAnalysis?.themeSentiments?.length > 0
+                                ? Math.round(themeAnalysis.themeSentiments.reduce((a, b) => a + b.sentiment, 0) / themeAnalysis.themeSentiments.length)
+                                : '—'}
+                            </p>
                           </div>
-                          <p className="text-3xl font-bold text-teal-700 dark:text-teal-300">
-                            {themeAnalysis?.themeSentiments?.length > 0
-                              ? Math.round(themeAnalysis.themeSentiments.reduce((a, b) => a + b.sentiment, 0) / themeAnalysis.themeSentiments.length)
-                              : '—'}
-                          </p>
                         </div>
                       </div>
 
                       {/* AI Analysis */}
                       {isAnalyzingThemes ? (
-                        <div className="bg-slate-50 dark:bg-slate-700/30 rounded-xl p-8 text-center">
+                        <div className="bg-slate-50 dark:bg-slate-900/30 rounded-2xl p-8 text-center border border-dashed border-slate-200 dark:border-slate-800">
                           <LoadingSpinner size="md" />
                           <p className="text-slate-600 dark:text-slate-400 mt-4">Analyzing feedback themes...</p>
                         </div>
                       ) : themeAnalysis ? (
                         <>
                           {/* Executive Summary */}
-                          <div className="bg-gradient-to-br from-sky-50 to-purple-50 dark:from-sky-900/20 dark:to-purple-900/20 rounded-xl p-5 border border-sky-100 dark:border-sky-900/30">
-                            <div className="flex items-center justify-between mb-3">
-                              <div className="flex items-center gap-2">
-                                <Sparkles size={18} className="text-sky-600 dark:text-sky-400" />
-                                <h3 className="font-semibold text-slate-900 dark:text-slate-100">AI Summary</h3>
-                                {analysisCache[selectedSurvey?.id] && (
-                                  <span className="text-xs text-slate-400 dark:text-slate-500">(cached)</span>
-                                )}
+                          <div className="relative overflow-hidden rounded-2xl p-6 border border-indigo-100 dark:border-indigo-900/30 shadow-sm">
+                            <div className="absolute inset-0 bg-gradient-to-br from-indigo-50/50 to-violet-50/50 dark:from-indigo-900/20 dark:to-violet-900/20 backdrop-blur-sm" />
+                            <div className="relative z-10">
+                              <div className="flex items-center justify-between mb-4">
+                                <div className="flex items-center gap-2">
+                                  <div className="p-1.5 bg-indigo-100 dark:bg-indigo-900/40 rounded-lg">
+                                    <Sparkles size={16} className="text-indigo-600 dark:text-indigo-400" />
+                                  </div>
+                                  <h3 className="font-bold text-slate-900 dark:text-white">AI Executive Summary</h3>
+                                  {analysisCache[selectedSurvey?.id] && (
+                                    <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 rounded-full border border-slate-200 dark:border-slate-700">Cached</span>
+                                  )}
+                                </div>
+                                <button
+                                  onClick={handleReanalyze}
+                                  disabled={isAnalyzingThemes}
+                                  className="flex items-center gap-1.5 text-xs font-medium text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 dark:hover:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 px-3 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                                >
+                                  <RefreshCw size={12} className={isAnalyzingThemes ? 'animate-spin' : ''} />
+                                  Re-analyze
+                                </button>
                               </div>
-                              <button
-                                onClick={handleReanalyze}
-                                disabled={isAnalyzingThemes}
-                                className="flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 disabled:opacity-50"
-                              >
-                                <RefreshCw size={12} className={isAnalyzingThemes ? 'animate-spin' : ''} />
-                                Re-analyze
-                              </button>
+                              <p className="text-slate-700 dark:text-slate-300 leading-relaxed text-sm">
+                                {themeAnalysis.summary}
+                              </p>
                             </div>
-                            <p className="text-slate-700 dark:text-slate-300 leading-relaxed">
-                              {themeAnalysis.summary}
-                            </p>
                           </div>
 
                           {/* Theme Cards */}
                           {themeAnalysis.themeSentiments && themeAnalysis.themeSentiments.length > 0 && (
                             <div>
-                              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3 flex items-center gap-2">
+                              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2 uppercase tracking-wide opacity-80">
                                 <Tag size={16} />
                                 Key Themes & Sentiment
                               </h3>
@@ -1123,7 +1173,7 @@ const AdminSurveys = () => {
                                 {themeAnalysis.themeSentiments.map((theme, idx) => (
                                   <div
                                     key={idx}
-                                    className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-4"
+                                    className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-md rounded-xl border border-slate-200/50 dark:border-slate-800/50 p-4 hover:border-sky-200 dark:hover:border-sky-800/50 transition-colors"
                                   >
                                     <div className="flex items-center justify-between mb-3">
                                       <div className="flex items-center gap-3">
@@ -1131,22 +1181,22 @@ const AdminSurveys = () => {
                                           {theme.theme}
                                         </span>
                                         {theme.mentions && (
-                                          <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400 rounded-full">
+                                          <span className="text-xs px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 rounded-full border border-slate-200 dark:border-slate-700">
                                             {theme.mentions} mention{theme.mentions !== 1 ? 's' : ''}
                                           </span>
                                         )}
                                       </div>
                                       <div className="text-right">
-                                        <span className={`text-lg font-bold ${getSentimentColor(theme.sentiment)}`}>
-                                          {theme.sentiment}
-                                        </span>
-                                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                                        <div className={`text-lg font-bold ${getSentimentColor(theme.sentiment)}`}>
+                                          {theme.sentiment}%
+                                        </div>
+                                        <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
                                           {getSentimentLabel(theme.sentiment)}
                                         </p>
                                       </div>
                                     </div>
                                     {/* Sentiment Bar */}
-                                    <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+                                    <div className="h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
                                       <div
                                         className={`h-full rounded-full transition-all ${getSentimentBgColor(theme.sentiment)}`}
                                         style={{ width: `${theme.sentiment}%` }}
@@ -1161,14 +1211,14 @@ const AdminSurveys = () => {
                           {/* Simple Theme List (if no sentiment data) */}
                           {(!themeAnalysis.themeSentiments || themeAnalysis.themeSentiments.length === 0) && themeAnalysis.themes && themeAnalysis.themes.length > 0 && (
                             <div>
-                              <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 mb-3">
+                              <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 uppercase tracking-wide opacity-80">
                                 Recurring Themes
                               </h3>
                               <div className="flex flex-wrap gap-2">
                                 {themeAnalysis.themes.map((theme, idx) => (
                                   <span
                                     key={idx}
-                                    className="px-3 py-1.5 bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full text-sm font-medium"
+                                    className="px-3 py-1.5 bg-white/60 dark:bg-slate-900/40 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium shadow-sm"
                                   >
                                     {theme}
                                   </span>
@@ -1178,18 +1228,18 @@ const AdminSurveys = () => {
                           )}
                         </>
                       ) : !configStatus.gemini ? (
-                        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-5 border border-amber-100 dark:border-amber-900/30">
-                          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 mb-2">
-                            <Sparkles size={18} />
-                            <span className="font-medium">AI Analysis Unavailable</span>
+                        <div className="bg-amber-50 dark:bg-amber-900/20 rounded-xl p-6 border border-amber-100 dark:border-amber-900/30 text-center">
+                          <div className="inline-flex p-3 bg-amber-100 dark:bg-amber-900/40 rounded-full mb-3">
+                            <Sparkles size={20} className="text-amber-600 dark:text-amber-400" />
                           </div>
-                          <p className="text-sm text-amber-600 dark:text-amber-400">
+                          <h3 className="font-semibold text-amber-900 dark:text-amber-300 mb-1">AI Analysis Unavailable</h3>
+                          <p className="text-sm text-amber-700 dark:text-amber-400/80 max-w-sm mx-auto">
                             Add your Gemini API key in the .env file to enable automatic theme analysis.
                           </p>
                         </div>
                       ) : (
-                        <div className="bg-slate-50 dark:bg-slate-700/30 rounded-xl p-5 text-center">
-                          <p className="text-slate-600 dark:text-slate-400">
+                        <div className="bg-slate-50 dark:bg-slate-900/30 rounded-xl p-8 text-center border border-dashed border-slate-200 dark:border-slate-800">
+                          <p className="text-slate-500 dark:text-slate-400">
                             Theme analysis will appear here after processing.
                           </p>
                         </div>
@@ -1201,29 +1251,30 @@ const AdminSurveys = () => {
                       {surveyResponses.map((response, idx) => (
                         <div
                           key={response.id}
-                          className="bg-slate-50 dark:bg-slate-700/30 rounded-xl border border-slate-200 dark:border-slate-600 p-5"
+                          className="bg-white/60 dark:bg-slate-900/40 backdrop-blur-sm rounded-xl border border-slate-200/50 dark:border-slate-800/50 p-5 hover:bg-white/80 dark:hover:bg-slate-900/60 transition-colors"
                         >
                           <div className="flex items-start justify-between mb-4">
                             <div className="flex-1">
                               <div className="flex items-center gap-3 mb-2">
-                                <span className="text-sm font-medium text-slate-900 dark:text-slate-100">
+                                <span className="px-2.5 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold uppercase tracking-wider">
                                   Response #{idx + 1}
                                 </span>
                                 {response.studentEmail && (
-                                  <span className="text-xs px-3 py-1 bg-sky-100 dark:bg-sky-900/30 text-sky-700 dark:text-sky-300 rounded-full">
+                                  <span className="text-sm font-medium text-slate-900 dark:text-white flex items-center gap-1.5">
+                                    <span className="w-1.5 h-1.5 bg-sky-500 rounded-full"></span>
                                     {response.studentEmail}
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+                              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 pl-1">
                                 <Calendar size={12} />
                                 <span>{formatDate(response.timestamp)}</span>
                               </div>
                             </div>
                             {response.sentimentScore !== null && response.sentimentScore !== undefined && (
                               <div className="text-right">
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Sentiment</p>
-                                <p className={`text-2xl font-bold ${getSentimentColor(response.sentimentScore)}`}>
+                                <p className="text-[10px] uppercase font-bold text-slate-400 mb-0.5">Sentiment</p>
+                                <p className={`text-xl font-bold ${getSentimentColor(response.sentimentScore)}`}>
                                   {response.sentimentScore}
                                 </p>
                               </div>
@@ -1233,22 +1284,22 @@ const AdminSurveys = () => {
                           {/* Text Feedback */}
                           {response.answerText && (
                             <div className="mb-4">
-                              <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Feedback</p>
-                              <p className="text-sm text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 rounded-lg p-3">
-                                {response.answerText}
-                              </p>
+                              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Feedback</p>
+                              <div className="text-sm text-slate-700 dark:text-slate-300 bg-white/50 dark:bg-black/20 rounded-xl p-4 border border-slate-100 dark:border-slate-800 italic">
+                                "{response.answerText}"
+                              </div>
                             </div>
                           )}
 
                           {/* Individual Answers */}
                           {response.answers && Object.keys(response.answers).length > 0 && (
                             <div className="mb-4">
-                              <p className="text-xs font-medium text-slate-600 dark:text-slate-400 mb-2">Answers</p>
-                              <div className="space-y-2">
+                              <p className="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Structured Answers</p>
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 {Object.entries(response.answers).map(([questionId, answer], answerIdx) => (
-                                  <div key={questionId} className="flex items-start gap-3 text-sm">
-                                    <span className="font-medium text-slate-500 dark:text-slate-400 min-w-[24px]">Q{answerIdx + 1}:</span>
-                                    <span className="text-slate-700 dark:text-slate-300">
+                                  <div key={questionId} className="flex items-center justify-between p-3 bg-slate-50/50 dark:bg-slate-800/30 rounded-lg border border-slate-100 dark:border-slate-800">
+                                    <span className="font-medium text-slate-500 dark:text-slate-400 text-xs">Q{answerIdx + 1}</span>
+                                    <span className="text-sm font-semibold text-slate-900 dark:text-white">
                                       {typeof answer === 'number' ? `${answer}/10` : answer}
                                     </span>
                                   </div>
@@ -1259,13 +1310,13 @@ const AdminSurveys = () => {
 
                           {/* Tags */}
                           {response.aiSummaryTags && response.aiSummaryTags.length > 0 && (
-                            <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                               {response.aiSummaryTags.map((tag, tagIdx) => (
                                 <span
                                   key={tagIdx}
-                                  className="px-2 py-1 text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300 rounded-full"
+                                  className="px-2.5 py-1 text-xs font-medium bg-indigo-50 dark:bg-indigo-900/20 text-indigo-600 dark:text-indigo-400 rounded-md border border-indigo-100 dark:border-indigo-800/30"
                                 >
-                                  {tag}
+                                  #{tag}
                                 </span>
                               ))}
                             </div>
@@ -1277,10 +1328,10 @@ const AdminSurveys = () => {
                 </div>
 
                 {/* Modal Footer */}
-                <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50">
+                <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-800/50 backdrop-blur-sm">
                   <button
                     onClick={handleCloseResponsesModal}
-                    className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                    className="px-6 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-slate-700 rounded-xl transition-colors shadow-sm"
                   >
                     Close
                   </button>
