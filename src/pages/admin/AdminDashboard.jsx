@@ -41,9 +41,12 @@ const AdminDashboard = () => {
     };
   }, []);
 
+  // M18 FIX: Chart render delay - allows container dimensions to stabilize after mount
+  const CHART_RENDER_DELAY_MS = 100;
+
   // Delay chart rendering to ensure container dimensions are calculated
   useEffect(() => {
-    const timer = setTimeout(() => setIsChartReady(true), 100);
+    const timer = setTimeout(() => setIsChartReady(true), CHART_RENDER_DELAY_MS);
     return () => clearTimeout(timer);
   }, []);
 
@@ -126,7 +129,7 @@ const AdminDashboard = () => {
   const handleSeedTestData = async () => {
     // Clear any existing timeout
     if (seedTimeoutRef.current) clearTimeout(seedTimeoutRef.current);
-    
+
     if (!configStatus.firebase) {
       setSeedMessage({ type: 'error', text: 'Firebase not configured. Add your Firebase keys to .env first.' });
       seedTimeoutRef.current = setTimeout(() => setSeedMessage(null), 5000);
@@ -159,7 +162,7 @@ const AdminDashboard = () => {
   const handleClearTestData = async () => {
     // Clear any existing timeout
     if (clearTimeoutRef.current) clearTimeout(clearTimeoutRef.current);
-    
+
     if (!configStatus.firebase) {
       setClearMessage({ type: 'error', text: 'Firebase not configured. Add your Firebase keys to .env first.' });
       clearTimeoutRef.current = setTimeout(() => setClearMessage(null), 5000);
@@ -205,30 +208,30 @@ const AdminDashboard = () => {
   // ==================
   // ENGAGEMENT METRICS
   // ==================
-  
+
   // Calculate response rate for active surveys
   const engagementMetrics = useMemo(() => {
     const activeSurveys = surveys.filter(s => s.status === 'Active');
     const voteCounts = getVoteCountsBySurvey(surveyStatuses);
     const totalStudents = students.length;
-    
+
     if (activeSurveys.length === 0 || totalStudents === 0) {
       return { avgResponseRate: 0, activeSurveyCount: activeSurveys.length };
     }
-    
+
     // Calculate average response rate across active surveys
     let totalRate = 0;
     activeSurveys.forEach(survey => {
       // Get eligible students (cohort-specific or all)
-      const eligibleCount = survey.cohortId 
-        ? students.filter(s => s.cohortId === survey.cohortId).length 
+      const eligibleCount = survey.cohortId
+        ? students.filter(s => s.cohortId === survey.cohortId).length
         : totalStudents;
-      
+
       const votes = voteCounts[survey.id] || 0;
       const rate = eligibleCount > 0 ? (votes / eligibleCount) * 100 : 0;
       totalRate += rate;
     });
-    
+
     const avgResponseRate = Math.round(totalRate / activeSurveys.length);
     return { avgResponseRate, activeSurveyCount: activeSurveys.length };
   }, [surveys, surveyStatuses, students]);
@@ -238,39 +241,39 @@ const AdminDashboard = () => {
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     const fourteenDaysAgo = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-    
+
     let last7Days = 0;
     let prev7Days = 0;
-    
+
     responses.forEach(r => {
       const timestamp = r.timestamp?.toDate?.() || (r.timestamp ? new Date(r.timestamp) : null);
       if (!timestamp) return;
-      
+
       if (timestamp >= sevenDaysAgo) {
         last7Days++;
       } else if (timestamp >= fourteenDaysAgo) {
         prev7Days++;
       }
     });
-    
+
     const delta = prev7Days > 0 ? Math.round(((last7Days - prev7Days) / prev7Days) * 100) : (last7Days > 0 ? 100 : 0);
-    
+
     return { last7Days, prev7Days, delta };
   }, [responses]);
 
   // ==================
   // RISK METRICS
   // ==================
-  
+
   const riskMetrics = useMemo(() => {
     const totalStudents = students.length;
     const highRiskCount = students.filter(s => s.riskLevel === 'high').length;
     const mediumRiskCount = students.filter(s => s.riskLevel === 'medium').length;
     const unknownRiskCount = students.filter(s => s.riskLevel === 'unknown' || !s.riskLevel).length;
     const lowRiskCount = students.filter(s => s.riskLevel === 'low').length;
-    
+
     const highRiskPercent = totalStudents > 0 ? Math.round((highRiskCount / totalStudents) * 100) : 0;
-    
+
     return {
       totalStudents,
       highRiskCount,
@@ -294,14 +297,14 @@ const AdminDashboard = () => {
     const activeSurveys = surveys.filter(s => s.status === 'Active');
     const voteCounts = getVoteCountsBySurvey(surveyStatuses);
     const totalStudents = students.length;
-    
+
     return activeSurveys.map(survey => {
-      const eligibleCount = survey.cohortId 
-        ? students.filter(s => s.cohortId === survey.cohortId).length 
+      const eligibleCount = survey.cohortId
+        ? students.filter(s => s.cohortId === survey.cohortId).length
         : totalStudents;
       const votes = voteCounts[survey.id] || 0;
       const rate = eligibleCount > 0 ? Math.round((votes / eligibleCount) * 100) : 0;
-      
+
       return {
         surveyId: survey.id,
         surveyName: survey.title || 'Untitled Survey',
@@ -317,7 +320,7 @@ const AdminDashboard = () => {
   const recentActivityDetails = useMemo(() => {
     const now = new Date();
     const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-    
+
     const recentResponses = responses
       .map(r => {
         const timestamp = r.timestamp?.toDate?.() || (r.timestamp ? new Date(r.timestamp) : null);
@@ -325,7 +328,7 @@ const AdminDashboard = () => {
       })
       .filter(r => r.timestamp && r.timestamp >= sevenDaysAgo)
       .sort((a, b) => b.timestamp - a.timestamp);
-    
+
     // Group by day
     const groupedByDay = {};
     recentResponses.forEach(r => {
@@ -335,7 +338,7 @@ const AdminDashboard = () => {
       }
       groupedByDay[dayKey].push(r);
     });
-    
+
     return Object.entries(groupedByDay)
       .map(([day, dayResponses]) => ({
         date: new Date(day),
@@ -580,8 +583,8 @@ const AdminDashboard = () => {
               )}
             </div>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 pointer-events-none">
-              {engagementMetrics.activeSurveyCount === 0 
-                ? 'No active surveys' 
+              {engagementMetrics.activeSurveyCount === 0
+                ? 'No active surveys'
                 : 'Votes / Eligible students'}
             </p>
           </button>
@@ -693,11 +696,10 @@ const AdminDashboard = () => {
               <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Sentiment Trend</h3>
               {/* Week-over-Week Delta Badge */}
               {sentimentWoW.delta !== null && (
-                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${
-                  sentimentWoW.delta >= 0 
-                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400' 
+                <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-medium ${sentimentWoW.delta >= 0
+                    ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
                     : 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                }`}>
+                  }`}>
                   {sentimentWoW.delta >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
                   <span>{sentimentWoW.delta >= 0 ? '+' : ''}{sentimentWoW.delta}% vs last week</span>
                 </div>
@@ -705,48 +707,48 @@ const AdminDashboard = () => {
             </div>
             <div className="h-48">
               {isChartReady && (
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={trendData.filter(d => d.sentiment !== null)}>
-                  <defs>
-                    <linearGradient id="sentimentGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#0EA5E9" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#0EA5E9" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <XAxis 
-                    dataKey="day" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#94A3B8', fontSize: 12 }} 
-                    className="dark:[&>text]:fill-slate-400"
-                  />
-                  <YAxis 
-                    domain={[0, 100]} 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#94A3B8', fontSize: 12 }} 
-                    className="dark:[&>text]:fill-slate-400"
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: resolvedTheme === 'dark' ? '#1E293B' : '#ffffff',
-                      border: resolvedTheme === 'dark' ? 'none' : '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      color: resolvedTheme === 'dark' ? '#F1F5F9' : '#0f172a'
-                    }}
-                    formatter={(value, name) => [value, name === 'sentiment' ? 'Sentiment Score' : name]}
-                    labelFormatter={(label) => `${label}`}
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="sentiment"
-                    stroke="#0EA5E9"
-                    strokeWidth={2}
-                    fill="url(#sentimentGradient)"
-                    connectNulls
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart data={trendData.filter(d => d.sentiment !== null)}>
+                    <defs>
+                      <linearGradient id="sentimentGradient" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#0EA5E9" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#0EA5E9" stopOpacity={0} />
+                      </linearGradient>
+                    </defs>
+                    <XAxis
+                      dataKey="day"
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#94A3B8', fontSize: 12 }}
+                      className="dark:[&>text]:fill-slate-400"
+                    />
+                    <YAxis
+                      domain={[0, 100]}
+                      axisLine={false}
+                      tickLine={false}
+                      tick={{ fill: '#94A3B8', fontSize: 12 }}
+                      className="dark:[&>text]:fill-slate-400"
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: resolvedTheme === 'dark' ? '#1E293B' : '#ffffff',
+                        border: resolvedTheme === 'dark' ? 'none' : '1px solid #e2e8f0',
+                        borderRadius: '8px',
+                        color: resolvedTheme === 'dark' ? '#F1F5F9' : '#0f172a'
+                      }}
+                      formatter={(value, name) => [value, name === 'sentiment' ? 'Sentiment Score' : name]}
+                      labelFormatter={(label) => `${label}`}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="sentiment"
+                      stroke="#0EA5E9"
+                      strokeWidth={2}
+                      fill="url(#sentimentGradient)"
+                      connectNulls
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
               )}
             </div>
             {trendData.filter(d => d.sentiment !== null).length === 0 && (
@@ -763,49 +765,49 @@ const AdminDashboard = () => {
                 {responses.filter(r => r.sentimentScore != null).length > 0 ? (
                   <div className="h-32">
                     {isChartReady && (
-                    <ResponsiveContainer width="100%" height="100%">
-                      <BarChart data={sentimentDistribution} barCategoryGap="15%">
-                        <XAxis 
-                          dataKey="range" 
-                          axisLine={false} 
-                          tickLine={false} 
-                          tick={{ fill: '#94A3B8', fontSize: 10 }}
-                        />
-                        <YAxis 
-                          axisLine={false} 
-                          tickLine={false} 
-                          tick={{ fill: '#94A3B8', fontSize: 10 }}
-                          allowDecimals={false}
-                        />
-                        <Tooltip 
-                          cursor={false}
-                          contentStyle={{ 
-                            backgroundColor: resolvedTheme === 'dark' ? '#1E293B' : '#ffffff',
-                            border: resolvedTheme === 'dark' ? '1px solid #334155' : '1px solid #e2e8f0',
-                            borderRadius: '8px',
-                            fontSize: '12px',
-                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                          }}
-                          labelStyle={{
-                            color: resolvedTheme === 'dark' ? '#F1F5F9' : '#0f172a',
-                            fontWeight: 600,
-                            marginBottom: '4px'
-                          }}
-                          itemStyle={{
-                            color: resolvedTheme === 'dark' ? '#CBD5E1' : '#475569'
-                          }}
-                          formatter={(value, name, props) => [
-                            `${value} responses`,
-                            props.payload.label
-                          ]}
-                        />
-                        <Bar dataKey="count" radius={[4, 4, 0, 0]}>
-                          {sentimentDistribution.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Bar>
-                      </BarChart>
-                    </ResponsiveContainer>
+                      <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={sentimentDistribution} barCategoryGap="15%">
+                          <XAxis
+                            dataKey="range"
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#94A3B8', fontSize: 10 }}
+                          />
+                          <YAxis
+                            axisLine={false}
+                            tickLine={false}
+                            tick={{ fill: '#94A3B8', fontSize: 10 }}
+                            allowDecimals={false}
+                          />
+                          <Tooltip
+                            cursor={false}
+                            contentStyle={{
+                              backgroundColor: resolvedTheme === 'dark' ? '#1E293B' : '#ffffff',
+                              border: resolvedTheme === 'dark' ? '1px solid #334155' : '1px solid #e2e8f0',
+                              borderRadius: '8px',
+                              fontSize: '12px',
+                              boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                            }}
+                            labelStyle={{
+                              color: resolvedTheme === 'dark' ? '#F1F5F9' : '#0f172a',
+                              fontWeight: 600,
+                              marginBottom: '4px'
+                            }}
+                            itemStyle={{
+                              color: resolvedTheme === 'dark' ? '#CBD5E1' : '#475569'
+                            }}
+                            formatter={(value, name, props) => [
+                              `${value} responses`,
+                              props.payload.label
+                            ]}
+                          />
+                          <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                            {sentimentDistribution.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Bar>
+                        </BarChart>
+                      </ResponsiveContainer>
                     )}
                   </div>
                 ) : (
@@ -855,9 +857,9 @@ const AdminDashboard = () => {
                             </div>
                           </div>
                           <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                            <div 
+                            <div
                               className="h-full rounded-full transition-all duration-500"
-                              style={{ 
+                              style={{
                                 width: `${item.sentiment}%`,
                                 backgroundColor: barColor
                               }}
@@ -905,7 +907,7 @@ const AdminDashboard = () => {
                 <RefreshCw size={16} className={`text-slate-500 dark:text-slate-400 ${isLoadingSummary ? 'animate-spin' : ''}`} />
               </button>
             </div>
-            
+
             {isLoadingSummary ? (
               <div className="flex flex-col items-center justify-center h-48 gap-3">
                 <LoadingSpinner />
@@ -926,7 +928,7 @@ const AdminDashboard = () => {
                   </div>
                 )}
                 <p className="text-sm text-slate-600 dark:text-slate-300">{summary.summary}</p>
-                
+
                 {summary.themes?.length > 0 && (
                   <div>
                     <p className="text-xs font-medium text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Key Themes</p>
@@ -988,7 +990,7 @@ const AdminDashboard = () => {
                           <span>{detail.eligibleCount} eligible students</span>
                         </div>
                         <div className="mt-3 h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                          <div 
+                          <div
                             className="h-full bg-teal-500 transition-all"
                             style={{ width: `${detail.rate}%` }}
                           />
@@ -1064,11 +1066,10 @@ const AdminDashboard = () => {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 mb-6">
                   <button
                     onClick={() => setRiskFilterLevel('high')}
-                    className={`text-left rounded-lg p-3 sm:p-4 transition-all ${
-                      riskFilterLevel === 'high'
+                    className={`text-left rounded-lg p-3 sm:p-4 transition-all ${riskFilterLevel === 'high'
                         ? 'bg-red-50 dark:bg-red-900/20 border-2 border-red-500 dark:border-red-600 shadow-md'
                         : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 hover:border-red-300 dark:hover:border-red-700'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <span className="w-3 h-3 rounded-full bg-red-500"></span>
@@ -1081,11 +1082,10 @@ const AdminDashboard = () => {
                   </button>
                   <button
                     onClick={() => setRiskFilterLevel('medium')}
-                    className={`text-left rounded-lg p-3 sm:p-4 transition-all ${
-                      riskFilterLevel === 'medium'
+                    className={`text-left rounded-lg p-3 sm:p-4 transition-all ${riskFilterLevel === 'medium'
                         ? 'bg-amber-50 dark:bg-amber-900/20 border-2 border-amber-500 dark:border-amber-600 shadow-md'
                         : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-900/30 hover:border-amber-300 dark:hover:border-amber-700'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <span className="w-3 h-3 rounded-full bg-amber-500"></span>
@@ -1098,11 +1098,10 @@ const AdminDashboard = () => {
                   </button>
                   <button
                     onClick={() => setRiskFilterLevel('low')}
-                    className={`text-left rounded-lg p-3 sm:p-4 transition-all ${
-                      riskFilterLevel === 'low'
+                    className={`text-left rounded-lg p-3 sm:p-4 transition-all ${riskFilterLevel === 'low'
                         ? 'bg-green-50 dark:bg-green-900/20 border-2 border-green-500 dark:border-green-600 shadow-md'
                         : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 hover:border-green-300 dark:hover:border-green-700'
-                    }`}
+                      }`}
                   >
                     <div className="flex items-center gap-2 mb-2">
                       <span className="w-3 h-3 rounded-full bg-green-500"></span>
@@ -1116,11 +1115,10 @@ const AdminDashboard = () => {
                   {riskMetrics.unknownRiskCount > 0 && (
                     <button
                       onClick={() => setRiskFilterLevel('unknown')}
-                      className={`text-left rounded-lg p-3 sm:p-4 transition-all ${
-                        riskFilterLevel === 'unknown'
+                      className={`text-left rounded-lg p-3 sm:p-4 transition-all ${riskFilterLevel === 'unknown'
                           ? 'bg-slate-50 dark:bg-slate-700/50 border-2 border-slate-500 dark:border-slate-500 shadow-md'
                           : 'bg-slate-50 dark:bg-slate-700/50 border border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
-                      }`}
+                        }`}
                     >
                       <div className="flex items-center gap-2 mb-2">
                         <HelpCircle size={16} className="text-slate-400 dark:text-slate-500" />
@@ -1266,21 +1264,19 @@ const AdminDashboard = () => {
 
               {/* Status Messages */}
               {seedMessage && (
-                <div className={`mb-4 p-3 rounded-lg border ${
-                  seedMessage.type === 'success'
+                <div className={`mb-4 p-3 rounded-lg border ${seedMessage.type === 'success'
                     ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300'
                     : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
-                }`}>
+                  }`}>
                   <p className="text-sm font-medium">{seedMessage.text}</p>
                 </div>
               )}
 
               {clearMessage && (
-                <div className={`mb-4 p-3 rounded-lg border ${
-                  clearMessage.type === 'success'
+                <div className={`mb-4 p-3 rounded-lg border ${clearMessage.type === 'success'
                     ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300'
                     : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
-                }`}>
+                  }`}>
                   <p className="text-sm font-medium">{clearMessage.text}</p>
                 </div>
               )}

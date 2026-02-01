@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Plus, Users, Calendar, Upload, X, Check, FileSpreadsheet, AlertCircle, Mail, ChevronDown, ChevronUp, UserPlus, Trash2 } from 'lucide-react';
+import { Plus, Users, Calendar, Upload, X, Check, FileSpreadsheet, AlertCircle, Mail, ChevronDown, ChevronUp, UserPlus, Trash2, Download } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Papa from 'papaparse';
 import AdminLayout from '../../components/AdminLayout';
@@ -20,14 +20,14 @@ const validateRow = (row, rowIndex) => {
   const email = row.email || row.Email || row.EMAIL || '';
   const firstName = row['First Name'] || row.firstname || row.FirstName || '';
   const lastName = row['Last Name'] || row.lastname || row.LastName || '';
-  
+
   if (!email || !email.includes('@')) {
     errors.push(`Row ${rowIndex + 1}: Invalid or missing email`);
   }
   if (!firstName.trim() && !lastName.trim()) {
     errors.push(`Row ${rowIndex + 1}: Missing name`);
   }
-  
+
   return errors;
 };
 
@@ -40,18 +40,18 @@ const mapRowToStudent = (row, cohortId) => {
     }
     return '';
   };
-  
+
   const firstName = getValue(['First Name', 'firstname', 'FirstName', 'first_name']);
   const lastName = getValue(['Last Name', 'lastname', 'LastName', 'last_name']);
   const email = getValue(['Email', 'email', 'EMAIL', 'e-mail']);
   const gpaStr = getValue(['GPA', 'gpa', 'Gpa']);
   const portfolioLink = getValue(['Portfolio_Link', 'portfoliolink', 'PortfolioLink', 'portfolio_link', 'Portfolio']);
   const milestoneTag = getValue(['Milestone_Tag', 'milestonetag', 'MilestoneTag', 'milestone_tag', 'Milestone']);
-  
+
   // Parse GPA - treat missing/invalid as null
   const gpa = gpaStr ? parseFloat(gpaStr) : null;
   const validGpa = gpa !== null && !isNaN(gpa) ? gpa : null;
-  
+
   // Derive risk level from GPA (null GPA = unknown risk)
   let riskLevel = 'unknown';
   if (validGpa !== null) {
@@ -59,7 +59,7 @@ const mapRowToStudent = (row, cohortId) => {
     else if (validGpa < 2.5) riskLevel = 'medium';
     else riskLevel = 'low';
   }
-  
+
   return {
     firstName,
     lastName,
@@ -111,6 +111,65 @@ const AdminCohorts = () => {
     };
   }, []);
 
+  // CSV Upload Modal state
+  const [isUploadModalOpen, setIsUploadModalOpen] = useState(false);
+  const [selectedUploadCohort, setSelectedUploadCohort] = useState('');
+  const uploadFileRef = useRef(null);
+
+  // CSV Export Modal state
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [selectedExportCohort, setSelectedExportCohort] = useState('');
+
+  // Generate and download sample CSV
+  const handleDownloadSample = () => {
+    const sampleData = `First Name,Last Name,Email,GPA,Portfolio_Link,Milestone_Tag
+John,Doe,john.doe@example.edu,3.5,https://portfolio.com/john,Freshman
+Jane,Smith,jane.smith@example.edu,3.8,https://portfolio.com/jane,Sophomore
+Mike,Johnson,mike.johnson@example.edu,2.9,https://portfolio.com/mike,Senior`;
+
+    const blob = new Blob([sampleData], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'student_import_sample.csv';
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  // Export cohort students as CSV
+  const handleExportCohort = () => {
+    if (!selectedExportCohort) return;
+
+    const cohort = cohorts.find(c => c.id === selectedExportCohort);
+    const cohortStudents = students.filter(s => s.cohortId === selectedExportCohort);
+
+    if (cohortStudents.length === 0) {
+      alert('No students in this cohort to export.');
+      return;
+    }
+
+    const csvData = Papa.unparse(cohortStudents.map(s => ({
+      'First Name': s.firstName || '',
+      'Last Name': s.lastName || '',
+      'Email': s.email || '',
+      'GPA': s.gpa !== null ? s.gpa : '',
+      'Portfolio_Link': s.portfolioLink || '',
+      'Milestone_Tag': s.milestoneTag || s.milestone || '',
+      'Risk_Level': s.riskLevel || ''
+    })));
+
+    const blob = new Blob([csvData], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${cohort?.name || 'cohort'}_students.csv`.replace(/\s+/g, '_');
+    a.click();
+    URL.revokeObjectURL(url);
+
+    setIsExportModalOpen(false);
+    setSelectedExportCohort('');
+  };
+
   const toggleCohortExpansion = (cohortId) => {
     setExpandedCohorts(prev => {
       const newSet = new Set(prev);
@@ -152,13 +211,13 @@ const AdminCohorts = () => {
       complete: async (results) => {
         try {
           const { data, errors: parseErrors, meta } = results;
-          
+
           // Check for parse errors
           if (parseErrors.length > 0) {
             setImportStatus(prev => ({
               ...prev,
-              [cohortId]: { 
-                success: false, 
+              [cohortId]: {
+                success: false,
                 message: `CSV parse errors: ${parseErrors.slice(0, 3).map(e => e.message).join('; ')}`,
                 errors: parseErrors.map(e => e.message)
               }
@@ -166,25 +225,25 @@ const AdminCohorts = () => {
             setIsImporting(prev => ({ ...prev, [cohortId]: false }));
             return;
           }
-          
+
           // Validate headers
           const normalizedHeaders = meta.fields.map(normalizeHeader);
-          const missingHeaders = HEADER_DISPLAY.filter((h, i) => 
+          const missingHeaders = HEADER_DISPLAY.filter((h, i) =>
             !normalizedHeaders.includes(REQUIRED_HEADERS[i])
           );
-          
+
           if (missingHeaders.length > 0) {
             setImportStatus(prev => ({
               ...prev,
-              [cohortId]: { 
-                success: false, 
-                message: `Missing columns: ${missingHeaders.join(', ')}` 
+              [cohortId]: {
+                success: false,
+                message: `Missing columns: ${missingHeaders.join(', ')}`
               }
             }));
             setIsImporting(prev => ({ ...prev, [cohortId]: false }));
             return;
           }
-          
+
           if (data.length === 0) {
             setImportStatus(prev => ({
               ...prev,
@@ -193,19 +252,19 @@ const AdminCohorts = () => {
             setIsImporting(prev => ({ ...prev, [cohortId]: false }));
             return;
           }
-          
+
           // Validate each row
           const rowErrors = [];
           data.forEach((row, i) => {
             const errors = validateRow(row, i);
             rowErrors.push(...errors);
           });
-          
+
           if (rowErrors.length > 0) {
             setImportStatus(prev => ({
               ...prev,
-              [cohortId]: { 
-                success: false, 
+              [cohortId]: {
+                success: false,
                 message: `Validation errors in ${rowErrors.length} rows`,
                 errors: rowErrors.slice(0, 5) // Show first 5 errors
               }
@@ -213,18 +272,18 @@ const AdminCohorts = () => {
             setIsImporting(prev => ({ ...prev, [cohortId]: false }));
             return;
           }
-          
+
           // Map rows to student data
           const students = data.map(row => mapRowToStudent(row, cohortId));
-          
+
           // Import to Firestore with deduplication
           const result = await importStudentsFromCSVWithDedup(students, cohortId);
-          
+
           if (result.success) {
             setImportStatus(prev => ({
               ...prev,
-              [cohortId]: { 
-                success: true, 
+              [cohortId]: {
+                success: true,
                 message: `Imported ${result.imported} students${result.skipped > 0 ? ` (${result.skipped} duplicates skipped)` : ''}`,
                 count: result.imported,
                 skipped: result.skipped,
@@ -244,14 +303,14 @@ const AdminCohorts = () => {
             [cohortId]: { success: false, message: 'Error processing CSV file' }
           }));
         }
-        
+
         setIsImporting(prev => ({ ...prev, [cohortId]: false }));
-        
+
         // Clear file input
-        if (fileInputRefs.current[cohortId]) {
-          fileInputRefs.current[cohortId].value = '';
+        if (uploadFileRef.current) {
+          uploadFileRef.current.value = '';
         }
-        
+
         // Auto-clear success message after 8 seconds
         setTimeout(() => {
           setImportStatus(prev => ({ ...prev, [cohortId]: null }));
@@ -294,18 +353,18 @@ const AdminCohorts = () => {
       }));
       return;
     }
-    
+
     setIsImporting(prev => ({ ...prev, [cohortId]: true }));
     setImportStatus(prev => ({ ...prev, [cohortId]: null }));
-    
+
     try {
       const success = await importMockStudents(cohortId);
       if (success) {
         setImportStatus(prev => ({
           ...prev,
-          [cohortId]: { 
-            success: true, 
-            message: 'Imported 10 mock students', 
+          [cohortId]: {
+            success: true,
+            message: 'Imported 10 mock students',
             count: 10,
             emailsSent: true // Demo: simulated
           }
@@ -323,9 +382,9 @@ const AdminCohorts = () => {
         [cohortId]: { success: false, message: 'Error importing mock data' }
       }));
     }
-    
+
     setIsImporting(prev => ({ ...prev, [cohortId]: false }));
-    
+
     // Auto-clear after 8 seconds
     setTimeout(() => {
       setImportStatus(prev => ({ ...prev, [cohortId]: null }));
@@ -417,33 +476,30 @@ const AdminCohorts = () => {
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">Cohort Manager</h1>
             <p className="text-slate-500 mt-1">Create cohorts and import students</p>
           </div>
-          <button
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors"
-          >
-            <Plus size={18} />
-            Create Cohort
-          </button>
-        </div>
-
-        {/* CSV Import Info */}
-        <div className="bg-sky-50 border border-sky-200 rounded-xl p-4 mb-6">
-          <div className="flex items-start gap-3">
-            <FileSpreadsheet className="text-sky-500 flex-shrink-0 mt-0.5" size={20} />
-            <div>
-              <p className="text-sm font-medium text-sky-900">CSV Import Format</p>
-              <p className="text-xs text-sky-700 mt-1">
-                Required columns: <code className="bg-sky-100 px-1 rounded">First Name</code>, 
-                <code className="bg-sky-100 px-1 rounded ml-1">Last Name</code>, 
-                <code className="bg-sky-100 px-1 rounded ml-1">Email</code>, 
-                <code className="bg-sky-100 px-1 rounded ml-1">GPA</code>, 
-                <code className="bg-sky-100 px-1 rounded ml-1">Portfolio_Link</code>, 
-                <code className="bg-sky-100 px-1 rounded ml-1">Milestone_Tag</code>
-              </p>
-              <p className="text-xs text-sky-600 mt-2">
-                Supports 50+ rows. Duplicates (same email in cohort) are automatically skipped.
-              </p>
-            </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              disabled={cohorts.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Upload size={18} />
+              Upload CSV
+            </button>
+            <button
+              onClick={() => setIsExportModalOpen(true)}
+              disabled={cohorts.length === 0 || students.length === 0}
+              className="flex items-center gap-2 px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              <Download size={18} />
+              Export CSV
+            </button>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors"
+            >
+              <Plus size={18} />
+              Create Cohort
+            </button>
           </div>
         </div>
 
@@ -457,7 +513,7 @@ const AdminCohorts = () => {
         ) : (
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6 items-start">
             {cohorts.map(cohort => (
-                <div key={cohort.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm w-full">
+              <div key={cohort.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm w-full">
                 <div className="flex items-start justify-between mb-4">
                   <div>
                     <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{cohort.name}</h3>
@@ -470,14 +526,13 @@ const AdminCohorts = () => {
                     <Users className="text-sky-500" size={20} />
                   </div>
                 </div>
-                
+
                 {/* Import Status Message */}
                 {importStatus[cohort.id] && (
-                  <div className={`mb-4 p-3 rounded-lg text-sm ${
-                    importStatus[cohort.id].success 
-                      ? 'bg-green-50 text-green-700 border border-green-200' 
-                      : 'bg-red-50 text-red-700 border border-red-200'
-                  }`}>
+                  <div className={`mb-4 p-3 rounded-lg text-sm ${importStatus[cohort.id].success
+                    ? 'bg-green-50 text-green-700 border border-green-200'
+                    : 'bg-red-50 text-red-700 border border-red-200'
+                    }`}>
                     <div className="flex items-start gap-2">
                       {importStatus[cohort.id].success ? (
                         <Check size={16} className="flex-shrink-0 mt-0.5" />
@@ -505,35 +560,9 @@ const AdminCohorts = () => {
                     </div>
                   </div>
                 )}
-                
-                {/* CSV Upload */}
-                <div className="space-y-2">
-                  <input
-                    type="file"
-                    accept=".csv"
-                    ref={el => fileInputRefs.current[cohort.id] = el}
-                    onChange={(e) => handleCSVUpload(cohort.id, e.target.files?.[0])}
-                    className="hidden"
-                    id={`csv-upload-${cohort.id}`}
-                  />
-                  <button
-                    onClick={() => fileInputRefs.current[cohort.id]?.click()}
-                    disabled={isImporting[cohort.id]}
-                    className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-colors text-sm disabled:opacity-50"
-                  >
-                    {isImporting[cohort.id] ? (
-                      <>
-                        <LoadingSpinner size="sm" light />
-                        <span>Importing...</span>
-                      </>
-                    ) : (
-                      <>
-                        <FileSpreadsheet size={16} />
-                        Upload CSV
-                      </>
-                    )}
-                  </button>
 
+                {/* Actions */}
+                <div className="space-y-2">
                   <button
                     onClick={() => handleOpenAddStudent(cohort.id)}
                     className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-lg transition-colors text-sm"
@@ -587,13 +616,12 @@ const AdminCohorts = () => {
                                 )}
                                 {student.riskLevel && student.riskLevel !== 'unknown' && (
                                   <span
-                                    className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                                      student.riskLevel === 'high'
-                                        ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
-                                        : student.riskLevel === 'medium'
-                                          ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
-                                          : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
-                                    }`}
+                                    className={`px-2 py-0.5 text-xs font-medium rounded-full ${student.riskLevel === 'high'
+                                      ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400'
+                                      : student.riskLevel === 'medium'
+                                        ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400'
+                                        : 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400'
+                                      }`}
                                   >
                                     {student.riskLevel}
                                   </span>
@@ -833,6 +861,213 @@ const AdminCohorts = () => {
                   >
                     {isAddingStudent ? <LoadingSpinner size="sm" light /> : <UserPlus size={16} />}
                     Add Student
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* CSV Upload Modal */}
+        <AnimatePresence>
+          {isUploadModalOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+              onClick={() => setIsUploadModalOpen(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md"
+              >
+                <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Upload Student CSV</h2>
+                  <button
+                    onClick={() => setIsUploadModalOpen(false)}
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  >
+                    <X size={20} className="text-slate-500" />
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 p-4 rounded-lg text-sm">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle size={16} className="mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="font-semibold mb-1">CSV Format Requirements:</p>
+                        <p>Files must include: First Name, Last Name, Email, GPA, Portfolio Link, Milestone Tag.</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Select Cohort
+                    </label>
+                    <select
+                      value={selectedUploadCohort}
+                      onChange={(e) => setSelectedUploadCohort(e.target.value)}
+                      className="w-full px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    >
+                      <option value="">Select a cohort...</option>
+                      {cohorts.map(c => (
+                        <option key={c.id} value={c.id}>{c.name} ({c.year})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {selectedUploadCohort && importStatus[selectedUploadCohort] && (
+                    <div className={`p-3 rounded-lg text-sm ${importStatus[selectedUploadCohort].success
+                      ? 'bg-green-50 text-green-700 border border-green-200'
+                      : 'bg-red-50 text-red-700 border border-red-200'
+                      }`}>
+                      <div className="flex items-start gap-2">
+                        {importStatus[selectedUploadCohort].success ? (
+                          <Check size={16} className="flex-shrink-0 mt-0.5" />
+                        ) : (
+                          <AlertCircle size={16} className="flex-shrink-0 mt-0.5" />
+                        )}
+                        <div className="flex-1">
+                          <p>{importStatus[selectedUploadCohort].message}</p>
+                          {importStatus[selectedUploadCohort].errors?.length > 0 && (
+                            <ul className="mt-2 text-xs space-y-1">
+                              {importStatus[selectedUploadCohort].errors.map((err, i) => (
+                                <li key={i}>• {err}</li>
+                              ))}
+                            </ul>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="flex flex-col gap-3">
+                    <button
+                      onClick={handleDownloadSample}
+                      className="flex items-center justify-center gap-2 w-full px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors text-sm font-medium text-slate-600 dark:text-slate-300"
+                    >
+                      <FileSpreadsheet size={16} />
+                      Download Sample CSV
+                    </button>
+
+                    <div className="relative">
+                      <input
+                        ref={uploadFileRef}
+                        type="file"
+                        accept=".csv"
+                        onChange={(e) => {
+                          if (selectedUploadCohort && e.target.files?.[0]) {
+                            handleCSVUpload(selectedUploadCohort, e.target.files[0]);
+                          }
+                        }}
+                        className="hidden"
+                        id="csv-upload-input"
+                        disabled={!selectedUploadCohort || isImporting[selectedUploadCohort]}
+                      />
+                      <label
+                        htmlFor="csv-upload-input"
+                        className={`flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed rounded-lg transition-all cursor-pointer ${!selectedUploadCohort
+                          ? 'border-slate-200 dark:border-slate-700 text-slate-400 bg-slate-50 dark:bg-slate-800/50 cursor-not-allowed'
+                          : isImporting[selectedUploadCohort]
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-600 cursor-wait'
+                            : 'border-slate-300 dark:border-slate-600 hover:border-emerald-500 dark:hover:border-emerald-500 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400'
+                          }`}
+                      >
+                        {isImporting[selectedUploadCohort] ? (
+                          <LoadingSpinner size="sm" />
+                        ) : (
+                          <Upload size={20} />
+                        )}
+                        <span className="font-medium">
+                          {isImporting[selectedUploadCohort] ? 'Uploading...' : 'Upload CSV'}
+                        </span>
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-b-2xl">
+                  <button
+                    onClick={() => setIsUploadModalOpen(false)}
+                    className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  >
+                    Close
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* CSV Export Modal */}
+        <AnimatePresence>
+          {isExportModalOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+              onClick={() => setIsExportModalOpen(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.95, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.95, opacity: 0 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white dark:bg-slate-800 rounded-2xl shadow-xl w-full max-w-md"
+              >
+                <div className="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-700">
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100">Export Cohort Data</h2>
+                  <button
+                    onClick={() => setIsExportModalOpen(false)}
+                    className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  >
+                    <X size={20} className="text-slate-500" />
+                  </button>
+                </div>
+
+                <div className="p-6 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
+                      Select Cohort to Export
+                    </label>
+                    <select
+                      value={selectedExportCohort}
+                      onChange={(e) => setSelectedExportCohort(e.target.value)}
+                      className="w-full px-4 py-2 border border-slate-200 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
+                    >
+                      <option value="">Select a cohort...</option>
+                      {cohorts.map(c => (
+                        <option key={c.id} value={c.id}>{c.name} ({c.year})</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="bg-slate-50 dark:bg-slate-700/50 p-4 rounded-lg text-sm text-slate-600 dark:text-slate-400">
+                    <p>This will export all students from the selected cohort as a CSV file, including their profiles, GPAs, and milestone tags.</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end gap-3 p-6 border-t border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/50 rounded-b-2xl">
+                  <button
+                    onClick={() => setIsExportModalOpen(false)}
+                    className="px-4 py-2 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleExportCohort}
+                    disabled={!selectedExportCohort}
+                    className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white rounded-lg transition-colors disabled:opacity-50 flex items-center gap-2"
+                  >
+                    <Download size={16} />
+                    Export CSV
                   </button>
                 </div>
               </motion.div>

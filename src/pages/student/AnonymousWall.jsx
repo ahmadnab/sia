@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { ArrowLeft, Shield, Send, MessageSquare, Lock, Sparkles, AlertCircle, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { ArrowLeft, Shield, MessageSquare, Lock, Sparkles, AlertCircle, MessageCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { subscribeToWallPosts, submitWallPost, subscribeToAllWallReplies } from '../../services/firebase';
 import { analyzeSentiment } from '../../services/gemini';
@@ -26,12 +26,14 @@ const AnonymousWall = () => {
     };
   }, []);
 
-  // Group replies by postId
-  const repliesByPost = allReplies.reduce((acc, reply) => {
-    if (!acc[reply.postId]) acc[reply.postId] = [];
-    acc[reply.postId].push(reply);
-    return acc;
-  }, {});
+  // M1 FIX: Wrap in useMemo to avoid recomputation on every render
+  const repliesByPost = useMemo(() => {
+    return allReplies.reduce((acc, reply) => {
+      if (!acc[reply.postId]) acc[reply.postId] = [];
+      acc[reply.postId].push(reply);
+      return acc;
+    }, {});
+  }, [allReplies]);
 
   const toggleExpanded = (postId) => {
     setExpandedPosts(prev => {
@@ -212,7 +214,7 @@ const AnonymousWall = () => {
             </div>
           ) : (
             <div className="space-y-3">
-              <AnimatePresence>
+              <AnimatePresence mode="popLayout">
                 {posts.map((post) => {
                   const postReplies = repliesByPost[post.id] || [];
                   const isExpanded = expandedPosts.has(post.id);
@@ -240,8 +242,8 @@ const AnonymousWall = () => {
                         </div>
                         {post.tags?.length > 0 && (
                           <div className="flex flex-wrap gap-1 mt-2">
-                            {post.tags.map((tag, i) => (
-                              <span key={i} className="px-2 py-0.5 bg-slate-700 text-slate-400 text-xs rounded-full">
+                            {post.tags.map((tag) => (
+                              <span key={`${post.id}-tag-${tag}`} className="px-2 py-0.5 bg-slate-700 text-slate-400 text-xs rounded-full">
                                 #{tag}
                               </span>
                             ))}

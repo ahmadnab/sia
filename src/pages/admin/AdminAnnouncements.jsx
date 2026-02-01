@@ -180,21 +180,21 @@ const AdminAnnouncements = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className={`mb-6 p-4 rounded-xl flex items-center gap-3 ${
-                notification.type === 'success'
+              className={`mb-6 p-4 rounded-xl flex items-center gap-3 ${notification.type === 'success'
                   ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300'
                   : notification.type === 'error'
                     ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
                     : 'bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-900/30 text-sky-700 dark:text-sky-300'
-              }`}
+                }`}
             >
               <Bell size={18} />
               <span>{notification.message}</span>
               <button
                 onClick={() => setNotification(null)}
                 className="ml-auto p-1 hover:bg-black/5 rounded"
+                aria-label="Dismiss notification"
               >
-                <X size={16} />
+                <X size={16} aria-hidden="true" />
               </button>
             </motion.div>
           )}
@@ -369,8 +369,9 @@ const AdminAnnouncements = () => {
                   <button
                     onClick={handleCloseModal}
                     className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
+                    aria-label="Close modal"
                   >
-                    <X size={20} className="text-slate-500" />
+                    <X size={20} className="text-slate-500" aria-hidden="true" />
                   </button>
                 </div>
 
@@ -434,15 +435,14 @@ const AdminAnnouncements = () => {
                         <button
                           key={priority}
                           onClick={() => setFormData(prev => ({ ...prev, priority }))}
-                          className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium capitalize transition-colors ${
-                            formData.priority === priority
+                          className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium capitalize transition-colors ${formData.priority === priority
                               ? priority === 'urgent'
                                 ? 'bg-red-100 dark:bg-red-900/30 border-red-300 dark:border-red-700 text-red-700 dark:text-red-400'
                                 : priority === 'important'
                                   ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400'
                                   : 'bg-sky-100 dark:bg-sky-900/30 border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-400'
                               : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'
-                          }`}
+                            }`}
                         >
                           {priority}
                         </button>
@@ -458,22 +458,20 @@ const AdminAnnouncements = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setFormData(prev => ({ ...prev, status: 'published' }))}
-                        className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                          formData.status === 'published'
+                        className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center justify-center gap-2 ${formData.status === 'published'
                             ? 'bg-green-100 dark:bg-green-900/30 border-green-300 dark:border-green-700 text-green-700 dark:text-green-400'
                             : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'
-                        }`}
+                          }`}
                       >
                         <Send size={14} />
                         Publish Now
                       </button>
                       <button
                         onClick={() => setFormData(prev => ({ ...prev, status: 'draft' }))}
-                        className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
-                          formData.status === 'draft'
+                        className={`flex-1 px-3 py-2 rounded-lg border text-sm font-medium transition-colors flex items-center justify-center gap-2 ${formData.status === 'draft'
                             ? 'bg-amber-100 dark:bg-amber-900/30 border-amber-300 dark:border-amber-700 text-amber-700 dark:text-amber-400'
                             : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'
-                        }`}
+                          }`}
                       >
                         <Clock size={14} />
                         Save as Draft

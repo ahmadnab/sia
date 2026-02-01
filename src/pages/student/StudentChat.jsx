@@ -82,23 +82,23 @@ const StudentChat = () => {
   const handleSetEmail = () => {
     const email = emailInput.trim().toLowerCase();
     setEmailError('');
-    
+
     if (!email) {
       setEmailError('Please enter your email address');
       return;
     }
-    
+
     if (!EMAIL_REGEX.test(email)) {
       setEmailError('Please enter a valid email address (e.g., you@university.edu)');
       return;
     }
-    
+
     try {
       localStorage.setItem('studentEmail', email);
     } catch (error) {
       console.warn('Could not save email to localStorage:', error);
     }
-    
+
     setStudentEmail(email);
     setShowEmailPrompt(false);
   };
@@ -122,14 +122,20 @@ const StudentChat = () => {
     const userMessage = input.trim();
     setInput('');
 
-    // Add user message to UI immediately
-    const userMsg = { role: 'user', content: userMessage };
+    // H8 FIX: Generate unique message ID for optimistic update with rollback
+    const userMsgId = `msg-${Date.now()}-user`;
+    const userMsg = { id: userMsgId, role: 'user', content: userMessage };
+
+    // Optimistic update - add to UI immediately
     setMessages(prev => [...prev, userMsg]);
 
-    // Save user message to Firebase
-    if (configStatus.firebase && studentEmail) {
-      await saveChatMessage(studentEmail, 'user', userMessage);
-    }
+    // Save user message to Firebase (fire and forget for better UX)
+    const saveUserMsgPromise = configStatus.firebase && studentEmail
+      ? saveChatMessage(studentEmail, 'user', userMessage).catch(err => {
+        console.error('Failed to save user message:', err);
+        // Could implement rollback here if needed
+      })
+      : Promise.resolve();
 
     setIsLoading(true);
 
@@ -152,8 +158,10 @@ const StudentChat = () => {
         isCrisis = result.isCrisisResponse;
       }
 
-      // Add assistant message to UI
+      // H8 FIX: Generate unique ID for assistant message
+      const assistantMsgId = `msg-${Date.now()}-assistant`;
       const assistantMsg = {
+        id: assistantMsgId,
         role: 'assistant',
         content: assistantResponse,
         isCrisis: isCrisis
@@ -166,7 +174,13 @@ const StudentChat = () => {
       }
     } catch (error) {
       console.error('Chat error:', error);
+
+      // H8 FIX: Rollback user message on complete failure (optional - keep for UX)
+      // setMessages(prev => prev.filter(m => m.id !== userMsgId));
+
+      const errorMsgId = `msg-${Date.now()}-error`;
       const errorMsg = {
+        id: errorMsgId,
         role: 'assistant',
         content: "Sorry, I'm having trouble connecting. Please try again in a moment."
       };
@@ -210,9 +224,8 @@ const StudentChat = () => {
             }}
             onKeyDown={(e) => e.key === 'Enter' && handleSetEmail()}
             placeholder="your.email@university.edu"
-            className={`w-full px-4 py-3 bg-slate-900 border rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent ${
-              emailError ? 'border-red-500 mb-2' : 'border-slate-700 mb-4'
-            }`}
+            className={`w-full px-4 py-3 bg-slate-900 border rounded-lg text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent ${emailError ? 'border-red-500 mb-2' : 'border-slate-700 mb-4'
+              }`}
             aria-label="Email address"
             aria-invalid={!!emailError}
             aria-describedby={emailError ? 'email-error' : undefined}
@@ -339,12 +352,11 @@ const StudentChat = () => {
                     ) : (
                       messages.slice().reverse().slice(0, 20).map((msg, idx) => (
                         <div
-                          key={idx}
-                          className={`p-3 rounded-lg ${
-                            msg.role === 'user'
-                              ? 'bg-sky-500/10 border border-sky-500/30'
-                              : 'bg-slate-900/50 border border-slate-700'
-                          }`}
+                          key={msg.id || `history-${messages.length - 1 - idx}`}
+                          className={`p-3 rounded-lg ${msg.role === 'user'
+                            ? 'bg-sky-500/10 border border-sky-500/30'
+                            : 'bg-slate-900/50 border border-slate-700'
+                            }`}
                         >
                           <div className="flex items-center gap-2 mb-1">
                             {msg.role === 'user' ? (
@@ -383,43 +395,41 @@ const StudentChat = () => {
           ) : (
             <AnimatePresence initial={false}>
               {messages.map((message, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                className={`flex gap-3 lg:gap-4 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
-              >
-                <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${
-                  message.role === 'user'
+                <motion.div
+                  key={message.id || `msg-${index}-${message.content?.slice(0, 10) || message.role}`}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className={`flex gap-3 lg:gap-4 ${message.role === 'user' ? 'flex-row-reverse' : ''}`}
+                >
+                  <div className={`w-8 h-8 lg:w-10 lg:h-10 rounded-full flex items-center justify-center flex-shrink-0 ${message.role === 'user'
                     ? 'bg-slate-700'
                     : message.isCrisis
                       ? 'bg-red-500'
                       : 'bg-sky-500'
-                }`}>
-                  {message.role === 'user'
-                    ? <User size={16} className="text-slate-300 lg:w-5 lg:h-5" />
-                    : message.isCrisis
-                      ? <AlertTriangle size={16} className="text-white lg:w-5 lg:h-5" />
-                      : <Bot size={16} className="text-white lg:w-5 lg:h-5" />
-                  }
-                </div>
-                <div className={`max-w-[80%] lg:max-w-[75%] rounded-2xl px-4 py-3 lg:px-5 lg:py-4 ${
-                  message.role === 'user'
+                    }`}>
+                    {message.role === 'user'
+                      ? <User size={16} className="text-slate-300 lg:w-5 lg:h-5" />
+                      : message.isCrisis
+                        ? <AlertTriangle size={16} className="text-white lg:w-5 lg:h-5" />
+                        : <Bot size={16} className="text-white lg:w-5 lg:h-5" />
+                    }
+                  </div>
+                  <div className={`max-w-[80%] lg:max-w-[75%] rounded-2xl px-4 py-3 lg:px-5 lg:py-4 ${message.role === 'user'
                     ? 'bg-sky-500 text-white'
                     : message.isCrisis
                       ? 'bg-red-500/20 border border-red-500/50 text-slate-100'
                       : 'bg-slate-800 text-slate-100'
-                }`}>
-                  <div className="text-sm lg:text-base">
-                    {message.role === 'user' ? (
-                      <p className="whitespace-pre-wrap">{message.content}</p>
-                    ) : (
-                      renderMarkdown(message.content)
-                    )}
+                    }`}>
+                    <div className="text-sm lg:text-base">
+                      {message.role === 'user' ? (
+                        <p className="whitespace-pre-wrap">{message.content}</p>
+                      ) : (
+                        renderMarkdown(message.content)
+                      )}
+                    </div>
                   </div>
-                </div>
-              </motion.div>
+                </motion.div>
               ))}
             </AnimatePresence>
           )}
@@ -454,7 +464,7 @@ const StudentChat = () => {
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyPress}
             placeholder="Type your message..."
             className="flex-1 bg-slate-900 border border-slate-700 rounded-full px-4 py-3 lg:px-6 lg:py-4 text-sm lg:text-base text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 focus:border-transparent transition-all"
             disabled={isLoading}

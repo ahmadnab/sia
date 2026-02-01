@@ -2,7 +2,8 @@
 // Uses DeepSeek's reasoner model for chat and chat model for other features
 
 const DEEPSEEK_API_KEY = import.meta.env.VITE_DEEPSEEK_API_KEY;
-const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
+// M3 FIX: Make API URL configurable via environment variable with fallback
+const DEEPSEEK_API_URL = import.meta.env.VITE_DEEPSEEK_API_URL || 'https://api.deepseek.com/v1/chat/completions';
 
 // ========================
 // INPUT SANITIZATION
@@ -11,10 +12,10 @@ const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions';
 // Sanitize user input to prevent prompt injection attacks
 const sanitizePromptInput = (input, maxLength = 5000) => {
   if (!input || typeof input !== 'string') return '';
-  
+
   // Truncate to max length
   let sanitized = input.slice(0, maxLength);
-  
+
   // Remove potential prompt injection patterns
   // These patterns attempt to override system instructions
   const injectionPatterns = [
@@ -29,11 +30,11 @@ const sanitizePromptInput = (input, maxLength = 5000) => {
     /<\|im_start\|>/gi,
     /<\|im_end\|>/gi,
   ];
-  
+
   for (const pattern of injectionPatterns) {
     sanitized = sanitized.replace(pattern, '[filtered]');
   }
-  
+
   return sanitized.trim();
 };
 
@@ -60,8 +61,94 @@ export const isGeminiConfigured = () => {
   return !!(DEEPSEEK_API_KEY && DEEPSEEK_API_KEY !== 'your_deepseek_api_key');
 };
 
-// Base function to call DeepSeek API
-const callDeepSeek = async (messages, model = MODELS.CHAT, maxTokens = 2048, temperature = 0.7) => {
+// M4 FIX: Simple request cache with TTL to prevent duplicate API calls
+const requestCache = {
+  cache: new Map(),
+  ttl: 5 * 60 * 1000, // 5 minute TTL
+
+  // Generate a cache key from request parameters
+  getKey: (messages, model) => {
+    return JSON.stringify({ messages: messages.slice(-3), model }); // Only use last 3 messages for key
+  },
+
+  // Get cached response if valid
+  get: function (key) {
+    const entry = this.cache.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.timestamp > this.ttl) {
+      this.cache.delete(key);
+      return null;
+    }
+    return entry.response;
+  },
+
+  // Set cache entry
+  set: function (key, response) {
+    // Limit cache size to 50 entries
+    if (this.cache.size >= 50) {
+      const firstKey = this.cache.keys().next().value;
+      this.cache.delete(firstKey);
+    }
+    this.cache.set(key, { response, timestamp: Date.now() });
+  },
+
+  // Clear expired entries
+  cleanup: function () {
+    const now = Date.now();
+    for (const [key, entry] of this.cache.entries()) {
+      if (now - entry.timestamp > this.ttl) {
+        this.cache.delete(key);
+      }
+    }
+  }
+};
+
+// H3 FIX: Rate limiting - Simple request queue with timestamps
+const rateLimiter = {
+  lastRequestTime: 0,
+  minInterval: 200, // Minimum 200ms between requests
+  queue: [],
+  isProcessing: false
+};
+
+// Process the rate limit queue
+const processQueue = async () => {
+  if (rateLimiter.isProcessing || rateLimiter.queue.length === 0) return;
+  rateLimiter.isProcessing = true;
+
+  while (rateLimiter.queue.length > 0) {
+    const now = Date.now();
+    const timeSinceLastRequest = now - rateLimiter.lastRequestTime;
+
+    if (timeSinceLastRequest < rateLimiter.minInterval) {
+      await new Promise(resolve => setTimeout(resolve, rateLimiter.minInterval - timeSinceLastRequest));
+    }
+
+    const { resolve, reject, fn } = rateLimiter.queue.shift();
+    rateLimiter.lastRequestTime = Date.now();
+
+    try {
+      const result = await fn();
+      resolve(result);
+    } catch (error) {
+      reject(error);
+    }
+  }
+
+  rateLimiter.isProcessing = false;
+};
+
+// Enqueue a request with rate limiting
+const enqueueRequest = (fn) => {
+  return new Promise((resolve, reject) => {
+    rateLimiter.queue.push({ resolve, reject, fn });
+    processQueue();
+  });
+};
+
+// H2 FIX: AbortController support for fetch calls
+// Base function to call DeepSeek API with AbortController support
+const callDeepSeek = async (messages, model = MODELS.CHAT, maxTokens = 2048, temperature = 0.7, signal = null) => {
   if (!isGeminiConfigured()) {
     throw new Error('DeepSeek API key not configured');
   }
@@ -73,40 +160,55 @@ const callDeepSeek = async (messages, model = MODELS.CHAT, maxTokens = 2048, tem
     max_tokens: maxTokens
   };
 
-  try {
-    const response = await fetch(DEEPSEEK_API_URL, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
-      },
-      body: JSON.stringify(requestBody)
-    });
+  // Wrap the fetch in the rate limiter H3 FIX
+  return enqueueRequest(async () => {
+    try {
+      const fetchOptions = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+        },
+        body: JSON.stringify(requestBody)
+      };
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error?.message || `DeepSeek API error: ${response.status}`);
+      // H2 FIX: Add AbortController signal if provided
+      if (signal) {
+        fetchOptions.signal = signal;
+      }
+
+      const response = await fetch(DEEPSEEK_API_URL, fetchOptions);
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error?.message || `DeepSeek API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Check if response was cut off
+      const finishReason = data.choices?.[0]?.finish_reason;
+      if (finishReason === 'length') {
+        console.warn('Response truncated due to max_tokens limit. Consider increasing maxTokens.');
+      }
+
+      // Extract response content
+      const content = data.choices?.[0]?.message?.content || '';
+
+      // For reasoner model, also extract reasoning if available (optional, not used for now)
+      const reasoning = data.choices?.[0]?.message?.reasoning_content || null;
+
+      return { content, reasoning };
+    } catch (error) {
+      // H2 FIX: Handle abort gracefully
+      if (error.name === 'AbortError') {
+        console.log('DeepSeek API call was aborted');
+        throw error;
+      }
+      console.error('DeepSeek API call failed:', error);
+      throw error;
     }
-
-    const data = await response.json();
-
-    // Check if response was cut off
-    const finishReason = data.choices?.[0]?.finish_reason;
-    if (finishReason === 'length') {
-      console.warn('Response truncated due to max_tokens limit. Consider increasing maxTokens.');
-    }
-
-    // Extract response content
-    const content = data.choices?.[0]?.message?.content || '';
-
-    // For reasoner model, also extract reasoning if available (optional, not used for now)
-    const reasoning = data.choices?.[0]?.message?.reasoning_content || null;
-
-    return { content, reasoning };
-  } catch (error) {
-    console.error('DeepSeek API call failed:', error);
-    throw error;
-  }
+  });
 };
 
 // ========================
@@ -199,9 +301,9 @@ export const analyzeSentiment = async (text) => {
       summary: 'No text provided'
     };
   }
-  
+
   const safeText = sanitizePromptInput(text, 2000);
-  
+
   const messages = [
     {
       role: 'system',
@@ -252,11 +354,11 @@ export const chatWithSia = async (message, milestone = 'Student', chatHistory = 
       isCrisisResponse: false
     };
   }
-  
+
   // Sanitize the message (but keep original for crisis detection)
   const originalMessage = message.trim();
   const safeMessage = sanitizePromptInput(originalMessage, 2000);
-  
+
   // Safety check for crisis keywords (use original message for accurate detection)
   const crisisKeywords = ['suicide', 'kill myself', 'end my life', 'self-harm', 'hurt myself'];
   const lowerMessage = originalMessage.toLowerCase();
@@ -457,7 +559,7 @@ export const generateChatSummary = async (chatMessages, studentInfo = {}) => {
   const transcript = chatMessages
     .slice(-50) // Last 50 messages for context efficiency
     .map(msg => {
-      const content = msg.role === 'user' 
+      const content = msg.role === 'user'
         ? sanitizePromptInput(msg.content || '', 500)
         : (msg.content || '');
       return `${msg.role === 'user' ? 'Student' : 'Sia'}: ${content}`;

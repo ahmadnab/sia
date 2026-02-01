@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Sparkles, X, Check, Clock, Archive, Edit2, Trash2, GripVertical, Send, FileText, Bell, Users, Mail, Calendar, ChevronDown, ChevronUp, TrendingUp, Tag, BarChart3, MessageSquare, RefreshCw } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminLayout from '../../components/AdminLayout';
-import { subscribeToSurveys, subscribeToCohorts, createSurvey, closeSurvey, publishSurvey, deleteSurvey, getSurveyResponsesWithStudents } from '../../services/firebase';
+import { subscribeToSurveys, subscribeToCohorts, createSurvey, closeSurvey, publishSurvey, deleteSurvey, getSurveyResponsesWithStudents, saveSurveyAnalysisCache, getSurveyAnalysisCache, deleteSurveyAnalysisCache } from '../../services/firebase';
 import { generateSurveyQuestions, generateResponseSummary } from '../../services/gemini';
 import { useApp } from '../../context/AppContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
@@ -16,10 +16,10 @@ const AdminSurveys = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [notification, setNotification] = useState(null);
   const [expandedSurveys, setExpandedSurveys] = useState(new Set());
-  
+
   // Survey creation mode: 'manual' or 'ai'
   const [creationMode, setCreationMode] = useState('ai');
-  
+
   // New survey form
   const [newSurvey, setNewSurvey] = useState({
     title: '',
@@ -43,6 +43,9 @@ const AdminSurveys = () => {
   const [isAnalyzingThemes, setIsAnalyzingThemes] = useState(false);
   const [activeTab, setActiveTab] = useState('themes'); // 'themes' or 'responses'
 
+  // Cache for theme analysis results (keyed by survey ID)
+  const [analysisCache, setAnalysisCache] = useState({});
+
   useEffect(() => {
     const unsubSurveys = subscribeToSurveys(setSurveys);
     const unsubCohorts = subscribeToCohorts(setCohorts);
@@ -56,16 +59,23 @@ const AdminSurveys = () => {
     setSelectedSurvey(survey);
     setIsResponsesModalOpen(true);
     setIsLoadingResponses(true);
-    setThemeAnalysis(null);
     setActiveTab('themes');
+    setThemeAnalysis(null);
 
     try {
+      // Check for cached analysis in Firebase first
+      const cachedAnalysis = await getSurveyAnalysisCache(survey.id);
+      if (cachedAnalysis) {
+        setThemeAnalysis(cachedAnalysis);
+        setAnalysisCache(prev => ({ ...prev, [survey.id]: cachedAnalysis }));
+      }
+
       const responses = await getSurveyResponsesWithStudents(survey.id);
       setSurveyResponses(responses);
 
-      // Auto-analyze themes if we have responses
-      if (responses.length > 0 && configStatus.gemini) {
-        analyzeThemes(responses);
+      // Only auto-analyze if we don't have cached results and have responses
+      if (!cachedAnalysis && responses.length > 0 && configStatus.gemini) {
+        analyzeThemes(responses, survey.id);
       }
     } catch (error) {
       console.error('Error loading responses:', error);
@@ -75,7 +85,7 @@ const AdminSurveys = () => {
     setIsLoadingResponses(false);
   };
 
-  const analyzeThemes = async (responses) => {
+  const analyzeThemes = async (responses, surveyId = null) => {
     setIsAnalyzingThemes(true);
     try {
       // Prepare response data for analysis
@@ -92,6 +102,12 @@ const AdminSurveys = () => {
 
       const analysis = await generateResponseSummary(responseTexts);
       setThemeAnalysis(analysis);
+
+      // Save to Firebase cache if surveyId provided
+      if (surveyId) {
+        setAnalysisCache(prev => ({ ...prev, [surveyId]: analysis }));
+        await saveSurveyAnalysisCache(surveyId, analysis);
+      }
     } catch (error) {
       console.error('Theme analysis error:', error);
       setThemeAnalysis({
@@ -101,6 +117,22 @@ const AdminSurveys = () => {
       });
     }
     setIsAnalyzingThemes(false);
+  };
+
+  // Force re-analyze (clears cache for this survey)
+  const handleReanalyze = async () => {
+    if (!selectedSurvey || surveyResponses.length === 0) return;
+
+    // Clear cache from Firebase and local state
+    setAnalysisCache(prev => {
+      const newCache = { ...prev };
+      delete newCache[selectedSurvey.id];
+      return newCache;
+    });
+    await deleteSurveyAnalysisCache(selectedSurvey.id);
+
+    // Re-run analysis
+    analyzeThemes(surveyResponses, selectedSurvey.id);
   };
 
   const handleCloseResponsesModal = () => {
@@ -153,7 +185,7 @@ const AdminSurveys = () => {
 
   const handleGenerateQuestions = async () => {
     if (!newSurvey.topic.trim()) return;
-    
+
     setIsGenerating(true);
     try {
       const questions = await generateSurveyQuestions(newSurvey.topic);
@@ -170,10 +202,10 @@ const AdminSurveys = () => {
 
   // Add a new blank question manually
   const handleAddQuestion = (type = 'text') => {
-    const newQuestion = type === 'scale' 
+    const newQuestion = type === 'scale'
       ? { type: 'scale', question: '', min: 1, max: 10, minLabel: 'Low', maxLabel: 'High' }
       : { type: 'text', question: '' };
-    
+
     setNewSurvey(prev => ({
       ...prev,
       questions: [...prev.questions, newQuestion]
@@ -215,12 +247,12 @@ const AdminSurveys = () => {
         cohortId: newSurvey.cohortId || null,
         status: newSurvey.publishImmediately ? 'Active' : 'Draft'
       });
-      
+
       handleCloseModal();
-      
+
       // Show notification with cohort info
-      const cohortName = newSurvey.cohortId 
-        ? cohorts.find(c => c.id === newSurvey.cohortId)?.name 
+      const cohortName = newSurvey.cohortId
+        ? cohorts.find(c => c.id === newSurvey.cohortId)?.name
         : 'All Students';
       if (newSurvey.publishImmediately) {
         showNotification(`Survey published for ${cohortName}! (Demo: notification emails simulated)`, 'success');
@@ -300,17 +332,16 @@ const AdminSurveys = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className={`mb-6 p-4 rounded-xl flex items-center gap-3 ${
-                notification.type === 'success' 
-                  ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300' 
-                  : notification.type === 'error'
-                    ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
-                    : 'bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-900/30 text-sky-700 dark:text-sky-300'
-              }`}
+              className={`mb-6 p-4 rounded-xl flex items-center gap-3 ${notification.type === 'success'
+                ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-900/30 text-green-700 dark:text-green-300'
+                : notification.type === 'error'
+                  ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-300'
+                  : 'bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-900/30 text-sky-700 dark:text-sky-300'
+                }`}
             >
               <Bell size={18} />
               <span>{notification.message}</span>
-              <button 
+              <button
                 onClick={() => setNotification(null)}
                 className="ml-auto p-1 hover:bg-black/5 rounded"
               >
@@ -338,11 +369,11 @@ const AdminSurveys = () => {
         {/* Draft Surveys */}
         {draftSurveys.length > 0 && (
           <section className="mb-8">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
               <FileText size={20} className="text-amber-500" />
               Draft Surveys ({draftSurveys.length})
             </h2>
-            
+
             <div className="grid gap-4">
               {draftSurveys.map(survey => {
                 const isExpanded = expandedSurveys.has(survey.id);
@@ -418,11 +449,11 @@ const AdminSurveys = () => {
 
         {/* Active Surveys */}
         <section className="mb-8">
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+          <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
             <Clock size={20} className="text-sky-500" />
             Active Surveys ({activeSurveys.length})
           </h2>
-          
+
           {activeSurveys.length === 0 ? (
             <div className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-8 text-center shadow-sm">
               <p className="text-slate-500 dark:text-slate-400">No active surveys. Create one to start collecting feedback.</p>
@@ -436,93 +467,93 @@ const AdminSurveys = () => {
                 const isExpanded = expandedSurveys.has(survey.id);
                 const questionsToShow = isExpanded ? survey.questions : survey.questions?.slice(0, 3);
                 return (
-                <div key={survey.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{survey.title}</h3>
-                      <div className="flex items-center gap-2 mt-1 flex-wrap">
-                        <p className="text-sm text-slate-500 dark:text-slate-400">
-                          {survey.questions?.length || 0} questions
-                        </p>
-                        {cohort && (
-                          <span className="text-xs px-2 py-0.5 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-full flex items-center gap-1">
-                            <Users size={10} />
-                            {cohort.name}
+                  <div key={survey.id} className="bg-white dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">{survey.title}</h3>
+                        <div className="flex items-center gap-2 mt-1 flex-wrap">
+                          <p className="text-sm text-slate-500 dark:text-slate-400">
+                            {survey.questions?.length || 0} questions
+                          </p>
+                          {cohort && (
+                            <span className="text-xs px-2 py-0.5 bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400 rounded-full flex items-center gap-1">
+                              <Users size={10} />
+                              {cohort.name}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="px-3 py-1 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-full">
+                          Active
+                        </span>
+                        <button
+                          onClick={() => handleViewResponses(survey)}
+                          className="px-3 py-1 bg-sky-100 dark:bg-sky-900/30 hover:bg-sky-200 dark:hover:bg-sky-800/50 text-sky-700 dark:text-sky-300 text-sm rounded-lg transition-colors flex items-center gap-1"
+                        >
+                          <FileText size={14} />
+                          Responses
+                        </button>
+                        <button
+                          onClick={() => handleCloseSurvey(survey.id)}
+                          className="px-3 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-sm rounded-lg transition-colors"
+                        >
+                          Close
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Publish Info */}
+                    {(publishedDate || notifiedDate) && (
+                      <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
+                        {publishedDate && (
+                          <span className="flex items-center gap-1">
+                            <Calendar size={12} />
+                            Published {publishedDate.toLocaleDateString()}
+                          </span>
+                        )}
+                        {notifiedDate && (
+                          <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                            <Mail size={12} />
+                            Notified (simulated)
                           </span>
                         )}
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 bg-green-50 dark:bg-green-900/30 text-green-600 dark:text-green-400 text-xs font-medium rounded-full">
-                        Active
-                      </span>
-                      <button
-                        onClick={() => handleViewResponses(survey)}
-                        className="px-3 py-1 bg-sky-100 dark:bg-sky-900/30 hover:bg-sky-200 dark:hover:bg-sky-800/50 text-sky-700 dark:text-sky-300 text-sm rounded-lg transition-colors flex items-center gap-1"
-                      >
-                        <FileText size={14} />
-                        Responses
-                      </button>
-                      <button
-                        onClick={() => handleCloseSurvey(survey.id)}
-                        className="px-3 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-600 dark:text-slate-300 text-sm rounded-lg transition-colors"
-                      >
-                        Close
-                      </button>
-                    </div>
+                    )}
+
+                    {/* Questions Preview */}
+                    {survey.questions && survey.questions.length > 0 && (
+                      <div className="mt-4 space-y-2">
+                        {questionsToShow?.map((q, i) => (
+                          <div key={i} className="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
+                            <span className="text-slate-400 dark:text-slate-500 font-medium min-w-[20px]">{i + 1}.</span>
+                            <span className="flex-1">{q.question || <span className="text-slate-400 dark:text-slate-500 italic">No question text</span>}</span>
+                            <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
+                              ({q.type === 'scale' ? 'Scale' : 'Text'})
+                            </span>
+                          </div>
+                        ))}
+                        {survey.questions.length > 3 && (
+                          <button
+                            onClick={() => toggleSurveyExpansion(survey.id)}
+                            className="text-sm text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 flex items-center gap-1 mt-2"
+                          >
+                            {isExpanded ? (
+                              <>
+                                <ChevronUp size={16} />
+                                Show less
+                              </>
+                            ) : (
+                              <>
+                                <ChevronDown size={16} />
+                                Show {survey.questions.length - 3} more question{survey.questions.length - 3 !== 1 ? 's' : ''}
+                              </>
+                            )}
+                          </button>
+                        )}
+                      </div>
+                    )}
                   </div>
-
-                  {/* Publish Info */}
-                  {(publishedDate || notifiedDate) && (
-                    <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500 dark:text-slate-400">
-                      {publishedDate && (
-                        <span className="flex items-center gap-1">
-                          <Calendar size={12} />
-                          Published {publishedDate.toLocaleDateString()}
-                        </span>
-                      )}
-                      {notifiedDate && (
-                        <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
-                          <Mail size={12} />
-                          Notified (simulated)
-                        </span>
-                      )}
-                    </div>
-                  )}
-
-                  {/* Questions Preview */}
-                  {survey.questions && survey.questions.length > 0 && (
-                    <div className="mt-4 space-y-2">
-                      {questionsToShow?.map((q, i) => (
-                        <div key={i} className="text-sm text-slate-600 dark:text-slate-300 flex items-start gap-2">
-                          <span className="text-slate-400 dark:text-slate-500 font-medium min-w-[20px]">{i + 1}.</span>
-                          <span className="flex-1">{q.question || <span className="text-slate-400 dark:text-slate-500 italic">No question text</span>}</span>
-                          <span className="text-xs text-slate-400 dark:text-slate-500 whitespace-nowrap">
-                            ({q.type === 'scale' ? 'Scale' : 'Text'})
-                          </span>
-                        </div>
-                      ))}
-                      {survey.questions.length > 3 && (
-                        <button
-                          onClick={() => toggleSurveyExpansion(survey.id)}
-                          className="text-sm text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 flex items-center gap-1 mt-2"
-                        >
-                          {isExpanded ? (
-                            <>
-                              <ChevronUp size={16} />
-                              Show less
-                            </>
-                          ) : (
-                            <>
-                              <ChevronDown size={16} />
-                              Show {survey.questions.length - 3} more question{survey.questions.length - 3 !== 1 ? 's' : ''}
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </div>
                 );
               })}
             </div>
@@ -532,11 +563,11 @@ const AdminSurveys = () => {
         {/* Closed Surveys */}
         {closedSurveys.length > 0 && (
           <section>
-              <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
               <Archive size={20} className="text-slate-400" />
               Closed Surveys ({closedSurveys.length})
             </h2>
-            
+
             <div className="grid gap-4">
               {closedSurveys.map(survey => {
                 const isExpanded = expandedSurveys.has(survey.id);
@@ -687,22 +718,20 @@ const AdminSurveys = () => {
                     <div className="flex gap-2">
                       <button
                         onClick={() => setCreationMode('ai')}
-                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
-                          creationMode === 'ai'
-                            ? 'bg-sky-50 dark:bg-sky-900/30 border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-400'
-                            : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'
-                        }`}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-colors ${creationMode === 'ai'
+                          ? 'bg-sky-50 dark:bg-sky-900/30 border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-400'
+                          : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'
+                          }`}
                       >
                         <Sparkles size={18} />
                         <span className="font-medium">AI Assist</span>
                       </button>
                       <button
                         onClick={() => setCreationMode('manual')}
-                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-colors ${
-                          creationMode === 'manual'
-                            ? 'bg-sky-50 dark:bg-sky-900/30 border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-400'
-                            : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'
-                        }`}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-3 rounded-lg border transition-colors ${creationMode === 'manual'
+                          ? 'bg-sky-50 dark:bg-sky-900/30 border-sky-300 dark:border-sky-700 text-sky-700 dark:text-sky-400'
+                          : 'bg-white dark:bg-slate-700 border-slate-200 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-600'
+                          }`}
                       >
                         <Edit2 size={18} />
                         <span className="font-medium">Manual</span>
@@ -780,11 +809,10 @@ const AdminSurveys = () => {
                         {newSurvey.questions.map((q, i) => (
                           <div
                             key={i}
-                            className={`p-3 rounded-lg border transition-all ${
-                              editingQuestionIndex === i
-                                ? 'bg-white dark:bg-slate-700 border-sky-300 dark:border-sky-600 ring-2 ring-sky-100 dark:ring-sky-900/50'
-                                : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
-                            }`}
+                            className={`p-3 rounded-lg border transition-all ${editingQuestionIndex === i
+                              ? 'bg-white dark:bg-slate-700 border-sky-300 dark:border-sky-600 ring-2 ring-sky-100 dark:ring-sky-900/50'
+                              : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600'
+                              }`}
                           >
                             {editingQuestionIndex === i ? (
                               // Editing mode
@@ -800,7 +828,7 @@ const AdminSurveys = () => {
                                     autoFocus
                                   />
                                 </div>
-                                
+
                                 <div className="flex gap-2">
                                   <select
                                     value={q.type}
@@ -814,7 +842,7 @@ const AdminSurveys = () => {
                                     <option value="scale">Scale (1-10)</option>
                                   </select>
                                 </div>
-                                
+
                                 {q.type === 'scale' && (
                                   <div className="flex gap-2">
                                     <input
@@ -833,7 +861,7 @@ const AdminSurveys = () => {
                                     />
                                   </div>
                                 )}
-                                
+
                                 <div className="flex justify-end">
                                   <button
                                     onClick={() => setEditingQuestionIndex(null)}
@@ -879,7 +907,7 @@ const AdminSurveys = () => {
                           </div>
                         ))}
                       </div>
-                      
+
                       {/* Add more questions button (visible in both modes when questions exist) */}
                       <div className="mt-3 flex gap-2">
                         <button
@@ -906,23 +934,21 @@ const AdminSurveys = () => {
                     <div>
                       <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Publish immediately</label>
                       <p className="text-xs text-slate-500 dark:text-slate-400">
-                        {newSurvey.publishImmediately 
+                        {newSurvey.publishImmediately
                           ? 'Survey will be active and students will be notified'
                           : 'Survey will be saved as draft'}
                       </p>
                     </div>
                     <button
                       onClick={() => setNewSurvey(prev => ({ ...prev, publishImmediately: !prev.publishImmediately }))}
-                      className={`relative w-12 h-6 rounded-full transition-colors ${
-                        newSurvey.publishImmediately ? 'bg-sky-500' : 'bg-slate-300'
-                      }`}
+                      className={`relative w-12 h-6 rounded-full transition-colors ${newSurvey.publishImmediately ? 'bg-sky-500' : 'bg-slate-300'
+                        }`}
                     >
-                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${
-                        newSurvey.publishImmediately ? 'translate-x-7' : 'translate-x-1'
-                      }`} />
+                      <div className={`absolute top-1 w-4 h-4 rounded-full bg-white transition-transform ${newSurvey.publishImmediately ? 'translate-x-7' : 'translate-x-1'
+                        }`} />
                     </button>
                   </div>
-                  
+
                   <div className="flex items-center justify-end gap-3">
                     <button
                       onClick={handleCloseModal}
@@ -987,22 +1013,20 @@ const AdminSurveys = () => {
                   <div className="flex border-b border-slate-200 dark:border-slate-700 px-6">
                     <button
                       onClick={() => setActiveTab('themes')}
-                      className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                        activeTab === 'themes'
-                          ? 'border-sky-500 text-sky-600 dark:text-sky-400'
-                          : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                      }`}
+                      className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'themes'
+                        ? 'border-sky-500 text-sky-600 dark:text-sky-400'
+                        : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                        }`}
                     >
                       <BarChart3 size={16} />
                       Theme Analysis
                     </button>
                     <button
                       onClick={() => setActiveTab('responses')}
-                      className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
-                        activeTab === 'responses'
-                          ? 'border-sky-500 text-sky-600 dark:text-sky-400'
-                          : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
-                      }`}
+                      className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${activeTab === 'responses'
+                        ? 'border-sky-500 text-sky-600 dark:text-sky-400'
+                        : 'border-transparent text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                        }`}
                     >
                       <MessageSquare size={16} />
                       Individual Responses ({surveyResponses.length})
@@ -1070,12 +1094,16 @@ const AdminSurveys = () => {
                               <div className="flex items-center gap-2">
                                 <Sparkles size={18} className="text-sky-600 dark:text-sky-400" />
                                 <h3 className="font-semibold text-slate-900 dark:text-slate-100">AI Summary</h3>
+                                {analysisCache[selectedSurvey?.id] && (
+                                  <span className="text-xs text-slate-400 dark:text-slate-500">(cached)</span>
+                                )}
                               </div>
                               <button
-                                onClick={() => analyzeThemes(surveyResponses)}
-                                className="flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300"
+                                onClick={handleReanalyze}
+                                disabled={isAnalyzingThemes}
+                                className="flex items-center gap-1 text-xs text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 disabled:opacity-50"
                               >
-                                <RefreshCw size={12} />
+                                <RefreshCw size={12} className={isAnalyzingThemes ? 'animate-spin' : ''} />
                                 Re-analyze
                               </button>
                             </div>
