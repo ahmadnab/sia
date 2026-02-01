@@ -3,6 +3,7 @@ import {
   getFirestore,
   collection,
   doc,
+  getDoc,
   addDoc,
   setDoc,
   updateDoc,
@@ -11,6 +12,7 @@ import {
   query,
   where,
   orderBy,
+  limit, // H12 FIX: Added for query limits
   onSnapshot,
   writeBatch,
   serverTimestamp,
@@ -31,8 +33,8 @@ const firebaseConfig = {
 // Check if Firebase is configured
 export const isFirebaseConfigured = () => {
   return !!(
-    firebaseConfig.apiKey && 
-    firebaseConfig.projectId && 
+    firebaseConfig.apiKey &&
+    firebaseConfig.projectId &&
     firebaseConfig.apiKey !== 'your_firebase_api_key'
   );
 };
@@ -64,9 +66,37 @@ export const signInAnonymousUser = async () => {
 export const onAuthChange = (callback) => {
   if (!auth) {
     callback(null);
-    return () => {};
+    return () => { };
   }
   return onAuthStateChanged(auth, callback);
+};
+
+// M5 FIX: Email normalization helper for consistent email handling
+export const normalizeEmail = (email) => {
+  if (!email || typeof email !== 'string') return '';
+  return email.trim().toLowerCase();
+};
+
+// L8 FIX: Timestamp formatting utility for consistent date handling
+export const formatTimestamp = (timestamp, options = {}) => {
+  if (!timestamp) return 'N/A';
+
+  // Handle Firebase Timestamp objects or regular dates
+  const date = timestamp?.toDate ? timestamp.toDate() :
+    timestamp instanceof Date ? timestamp : new Date(timestamp);
+
+  if (isNaN(date.getTime())) return 'Invalid date';
+
+  const defaultOptions = {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    ...options
+  };
+
+  return date.toLocaleDateString('en-US', defaultOptions);
 };
 
 // ===================
@@ -76,7 +106,7 @@ export const onAuthChange = (callback) => {
 export const subscribeToStudents = (callback) => {
   if (!db) {
     callback([]);
-    return () => {};
+    return () => { };
   }
   const studentsRef = collection(db, 'students');
   const q = query(studentsRef, orderBy('name'));
@@ -121,7 +151,7 @@ export const deleteStudent = async (studentId) => {
 
 export const importMockStudents = async (cohortId = null) => {
   if (!db) return false;
-  
+
   // Mock students matching CSV import fields: First Name, Last Name, Email, GPA, Portfolio_Link, Milestone_Tag
   const mockStudents = [
     { firstName: 'Alice', lastName: 'Johnson', email: 'alice@university.edu', gpa: 3.8, milestoneTag: 'Sem 4', riskLevel: 'low', portfolioLink: 'https://portfolio.alice.dev' },
@@ -138,7 +168,7 @@ export const importMockStudents = async (cohortId = null) => {
 
   const batch = writeBatch(db);
   const studentsRef = collection(db, 'students');
-  
+
   mockStudents.forEach((student) => {
     const docRef = doc(studentsRef);
     batch.set(docRef, {
@@ -173,7 +203,7 @@ export const importStudentsFromCSV = async (students) => {
     for (let i = 0; i < students.length; i += BATCH_SIZE) {
       const chunk = students.slice(i, i + BATCH_SIZE);
       const batch = writeBatch(db);
-      
+
       chunk.forEach((student) => {
         const docRef = doc(studentsRef);
         batch.set(docRef, {
@@ -190,7 +220,7 @@ export const importStudentsFromCSV = async (students) => {
           createdAt: serverTimestamp()
         });
       });
-      
+
       await batch.commit();
     }
     return true;
@@ -210,37 +240,37 @@ export const importStudentsFromCSVWithDedup = async (students, cohortId) => {
     const studentsRef = collection(db, 'students');
     const q = query(studentsRef, where('cohortId', '==', cohortId));
     const snapshot = await getDocs(q);
-    
+
     const existingEmails = new Set();
     snapshot.docs.forEach(docSnap => {
       const email = docSnap.data().email?.toLowerCase().trim();
       if (email) existingEmails.add(email);
     });
-    
+
     // Filter out duplicates
     const newStudents = students.filter(s => {
       const email = s.email?.toLowerCase().trim();
       return email && !existingEmails.has(email);
     });
-    
+
     const skipped = students.length - newStudents.length;
-    
+
     if (newStudents.length === 0) {
-      return { 
-        success: true, 
-        imported: 0, 
+      return {
+        success: true,
+        imported: 0,
         skipped,
         message: skipped > 0 ? 'All students already exist in this cohort' : 'No valid students to import'
       };
     }
-    
+
     // Import new students in batches
     const BATCH_SIZE = 500;
-    
+
     for (let i = 0; i < newStudents.length; i += BATCH_SIZE) {
       const chunk = newStudents.slice(i, i + BATCH_SIZE);
       const batch = writeBatch(db);
-      
+
       chunk.forEach((student) => {
         const docRef = doc(studentsRef);
         batch.set(docRef, {
@@ -257,14 +287,14 @@ export const importStudentsFromCSVWithDedup = async (students, cohortId) => {
           createdAt: serverTimestamp()
         });
       });
-      
+
       await batch.commit();
     }
-    
-    return { 
-      success: true, 
-      imported: newStudents.length, 
-      skipped 
+
+    return {
+      success: true,
+      imported: newStudents.length,
+      skipped
     };
   } catch (error) {
     console.error('CSV dedup import error:', error);
@@ -279,7 +309,7 @@ export const importStudentsFromCSVWithDedup = async (students, cohortId) => {
 export const subscribeToSurveys = (callback, statusFilter = null) => {
   if (!db) {
     callback([]);
-    return () => {};
+    return () => { };
   }
   const surveysRef = collection(db, 'surveys');
   let q;
@@ -362,13 +392,64 @@ export const deleteSurvey = async (surveyId) => {
 };
 
 // ====================
+// SURVEY ANALYSIS CACHE
+// ====================
+
+// Save survey analysis to Firebase cache
+export const saveSurveyAnalysisCache = async (surveyId, analysisResult) => {
+  if (!db || !surveyId) return false;
+  try {
+    const cacheRef = doc(db, 'surveyAnalysisCache', surveyId);
+    await setDoc(cacheRef, {
+      analysis: analysisResult,
+      cachedAt: serverTimestamp(),
+      surveyId
+    });
+    return true;
+  } catch (error) {
+    console.error('Error saving analysis cache:', error);
+    return false;
+  }
+};
+
+// Get cached survey analysis from Firebase
+export const getSurveyAnalysisCache = async (surveyId) => {
+  if (!db || !surveyId) return null;
+  try {
+    const cacheRef = doc(db, 'surveyAnalysisCache', surveyId);
+    const cacheDoc = await getDoc(cacheRef);
+
+    if (!cacheDoc.exists()) return null;
+
+    const data = cacheDoc.data();
+    return data.analysis || null;
+  } catch (error) {
+    console.error('Error getting analysis cache:', error);
+    return null;
+  }
+};
+
+// Delete survey analysis cache (for re-analysis)
+export const deleteSurveyAnalysisCache = async (surveyId) => {
+  if (!db || !surveyId) return false;
+  try {
+    const cacheRef = doc(db, 'surveyAnalysisCache', surveyId);
+    await deleteDoc(cacheRef);
+    return true;
+  } catch (error) {
+    console.error('Error deleting analysis cache:', error);
+    return false;
+  }
+};
+
+// ====================
 // RESPONSES COLLECTION (Anonymous - No User ID!)
 // ====================
 
 export const subscribeToResponses = (callback, surveyId = null) => {
   if (!db) {
     callback([]);
-    return () => {};
+    return () => { };
   }
   const responsesRef = collection(db, 'responses');
   let q;
@@ -458,7 +539,7 @@ export const getSurveyResponsesWithStudents = async (surveyId) => {
 export const subscribeToCohorts = (callback) => {
   if (!db) {
     callback([]);
-    return () => {};
+    return () => { };
   }
   const cohortsRef = collection(db, 'cohorts');
   const q = query(cohortsRef, orderBy('createdAt', 'desc'));
@@ -496,15 +577,23 @@ export const createCohort = async (cohortData) => {
 
 // Get or create a persistent anonymous visitor ID (stored in localStorage)
 // This ID is used ONLY for vote tracking, NOT stored with responses
+// H4 FIX: Wrapped in try-catch to handle private browsing mode
 export const getVisitorId = () => {
   const VISITOR_ID_KEY = 'sia_visitor_id';
-  let visitorId = localStorage.getItem(VISITOR_ID_KEY);
-  if (!visitorId) {
-    // Generate a random UUID
-    visitorId = 'v_' + crypto.randomUUID();
-    localStorage.setItem(VISITOR_ID_KEY, visitorId);
+  try {
+    let visitorId = localStorage.getItem(VISITOR_ID_KEY);
+    if (!visitorId) {
+      // Generate a random UUID
+      visitorId = 'v_' + crypto.randomUUID();
+      localStorage.setItem(VISITOR_ID_KEY, visitorId);
+    }
+    return visitorId;
+  } catch (error) {
+    // localStorage unavailable (private browsing, storage full, etc.)
+    // Generate a session-only ID that won't persist
+    console.warn('localStorage unavailable, using session-only visitor ID:', error.message);
+    return 'v_session_' + crypto.randomUUID();
   }
-  return visitorId;
 };
 
 // Check if user has already voted on a survey
@@ -512,7 +601,7 @@ export const checkHasVoted = async (surveyId, visitorId) => {
   if (!db || !visitorId) return false;
   try {
     const statusRef = collection(db, 'survey_status');
-    const q = query(statusRef, 
+    const q = query(statusRef,
       where('surveyId', '==', surveyId),
       where('visitorId', '==', visitorId)
     );
@@ -546,7 +635,7 @@ export const markAsVoted = async (surveyId, visitorId) => {
 export const subscribeToSurveyStatus = (callback) => {
   if (!db) {
     callback([]);
-    return () => {};
+    return () => { };
   }
   const statusRef = collection(db, 'survey_status');
   const q = query(statusRef, orderBy('updatedAt', 'desc'));
@@ -582,7 +671,7 @@ export const getVoteCountsBySurvey = (surveyStatuses) => {
 export const subscribeToWallPosts = (callback) => {
   if (!db) {
     callback([]);
-    return () => {};
+    return () => { };
   }
   const wallRef = collection(db, 'anonymous_wall');
   const q = query(wallRef, orderBy('createdAt', 'desc'));
@@ -603,7 +692,7 @@ export const submitWallPost = async (postData) => {
   if (!db) return null;
   try {
     const wallRef = collection(db, 'anonymous_wall');
-    
+
     const anonymousPost = {
       content: postData.content,
       sentimentScore: postData.sentimentScore || 50,
@@ -611,7 +700,7 @@ export const submitWallPost = async (postData) => {
       createdAt: serverTimestamp()
       // NO userId, NO email, NO identifying information
     };
-    
+
     const docRef = await addDoc(wallRef, anonymousPost);
     return docRef.id;
   } catch (error) {
@@ -625,10 +714,28 @@ export const submitWallPost = async (postData) => {
 // ===================
 
 // Seed comprehensive test data for demo purposes
+// H13 FIX: Uses seeded random for deterministic, reproducible test data
 export const seedTestData = async () => {
   if (!db) return { success: false, message: 'Database not configured' };
 
   try {
+    // H13 FIX: Simple seeded random number generator (Linear Congruential Generator)
+    // This ensures test data is deterministic and reproducible
+    const createSeededRandom = (seed = 12345) => {
+      let current = seed;
+      return () => {
+        current = (current * 1103515245 + 12345) % 2147483648;
+        return current / 2147483648;
+      };
+    };
+
+    // Create seeded random instance
+    const seededRandom = createSeededRandom(42); // Fixed seed for reproducibility
+
+    // Helper function to pick random item from array using seeded random
+    const pickRandom = (arr) => arr[Math.floor(seededRandom() * arr.length)];
+    const randomInRange = (min, max) => min + Math.floor(seededRandom() * (max - min + 1));
+
     const batch = writeBatch(db);
     const results = {
       cohorts: [],
@@ -863,14 +970,14 @@ export const seedTestData = async () => {
         let answerText, sentimentScore;
 
         if (sentiment === 'positive') {
-          answerText = positiveTexts[Math.floor(Math.random() * positiveTexts.length)];
-          sentimentScore = 70 + Math.floor(Math.random() * 30); // 70-100
+          answerText = pickRandom(positiveTexts);
+          sentimentScore = randomInRange(70, 100); // 70-100
         } else if (sentiment === 'neutral') {
-          answerText = neutralTexts[Math.floor(Math.random() * neutralTexts.length)];
-          sentimentScore = 40 + Math.floor(Math.random() * 30); // 40-69
+          answerText = pickRandom(neutralTexts);
+          sentimentScore = randomInRange(40, 69); // 40-69
         } else {
-          answerText = negativeTexts[Math.floor(Math.random() * negativeTexts.length)];
-          sentimentScore = 10 + Math.floor(Math.random() * 30); // 10-39
+          answerText = pickRandom(negativeTexts);
+          sentimentScore = randomInRange(10, 39); // 10-39
         }
 
         responses.push({
@@ -879,8 +986,8 @@ export const seedTestData = async () => {
           sentimentScore,
           answers: {}, // Scale responses would go here
           aiSummaryTags: sentiment === 'positive' ? ['satisfied', 'engaged'] :
-                        sentiment === 'neutral' ? ['manageable', 'mixed-feelings'] :
-                        ['stressed', 'struggling']
+            sentiment === 'neutral' ? ['manageable', 'mixed-feelings'] :
+              ['stressed', 'struggling']
         });
       }
 
@@ -889,11 +996,11 @@ export const seedTestData = async () => {
 
     const responsesRef = collection(db, 'responses');
 
-    // Helper to generate a random timestamp within the past N days
+    // Helper to generate a deterministic timestamp within the past N days
     const getRandomPastTimestamp = (daysAgo) => {
       const now = Date.now();
       const msAgo = daysAgo * 24 * 60 * 60 * 1000;
-      const randomOffset = Math.floor(Math.random() * msAgo);
+      const randomOffset = Math.floor(seededRandom() * msAgo);
       return Timestamp.fromDate(new Date(now - randomOffset));
     };
 
@@ -1197,7 +1304,7 @@ export const saveSummaryCache = async (summary) => {
   try {
     // Use a fixed document ID to avoid race conditions (atomic upsert)
     const cacheDocRef = doc(db, 'summary_cache', 'latest');
-    
+
     await setDoc(cacheDocRef, {
       ...summary,
       cachedAt: serverTimestamp(),
@@ -1237,7 +1344,7 @@ export const getCachedSummary = async () => {
 export const subscribeToSummaryCache = (callback) => {
   if (!db) {
     callback(null);
-    return () => {};
+    return () => { };
   }
 
   const cacheRef = collection(db, 'summary_cache');
@@ -1305,7 +1412,7 @@ export const getChatHistory = async (studentEmail) => {
 export const subscribeToChatHistory = (studentEmail, callback) => {
   if (!db) {
     callback([]);
-    return () => {};
+    return () => { };
   }
 
   const chatsRef = collection(db, 'chat_history');
@@ -1348,6 +1455,7 @@ export const clearChatHistory = async (studentEmail) => {
 };
 
 // Get all students who have chat history (for admin)
+// H1 FIX: Uses batched queries with 'in' operator (max 10 per batch) to avoid N+1 query pattern
 export const getStudentsWithChats = async () => {
   if (!db) return [];
   try {
@@ -1363,29 +1471,43 @@ export const getStudentsWithChats = async () => {
       }
     });
 
-    // Get student details for each email
+    const emails = Array.from(emailsSet);
+    if (emails.length === 0) return [];
+
+    // Batch query students using Firestore 'in' operator (max 10 items per query)
     const students = [];
     const studentsRef = collection(db, 'students');
+    const BATCH_SIZE = 10;
 
-    for (const email of emailsSet) {
-      const q = query(studentsRef, where('email', '==', email));
+    // Process emails in chunks of 10
+    for (let i = 0; i < emails.length; i += BATCH_SIZE) {
+      const emailBatch = emails.slice(i, i + BATCH_SIZE);
+      const q = query(studentsRef, where('email', 'in', emailBatch));
       const studentSnapshot = await getDocs(q);
 
-      if (!studentSnapshot.empty) {
+      // Track which emails were found in this batch
+      const foundEmails = new Set();
+      studentSnapshot.docs.forEach(doc => {
+        const data = doc.data();
         students.push({
-          id: studentSnapshot.docs[0].id,
-          ...studentSnapshot.docs[0].data()
+          id: doc.id,
+          ...data
         });
-      } else {
-        // Student not in roster, create basic info
-        students.push({
-          id: email,
-          email: email,
-          name: email.split('@')[0],
-          riskLevel: 'unknown',
-          cohortId: null
-        });
-      }
+        foundEmails.add(data.email);
+      });
+
+      // Add placeholder entries for emails not found in roster
+      emailBatch.forEach(email => {
+        if (!foundEmails.has(email)) {
+          students.push({
+            id: email,
+            email: email,
+            name: email.split('@')[0],
+            riskLevel: 'unknown',
+            cohortId: null
+          });
+        }
+      });
     }
 
     return students;
@@ -1396,6 +1518,7 @@ export const getStudentsWithChats = async () => {
 };
 
 // Get chat analytics for admin dashboard
+// H1 FIX: Fetch all chat messages once and compute stats in memory instead of N queries
 export const getChatAnalytics = async (filters = {}) => {
   if (!db) return [];
   try {
@@ -1421,25 +1544,32 @@ export const getChatAnalytics = async (filters = {}) => {
       );
     }
 
-    // Get message count for each student
+    // Fetch all chat messages once (instead of N queries)
     const chatsRef = collection(db, 'chat_history');
-    const studentsWithCounts = await Promise.all(
-      filteredStudents.map(async (student) => {
-        const q = query(chatsRef, where('studentEmail', '==', student.email));
-        const snapshot = await getDocs(q);
+    const allChatsSnapshot = await getDocs(chatsRef);
 
-        return {
-          ...student,
-          messageCount: snapshot.size,
-          lastMessageAt: snapshot.docs.length > 0
-            ? snapshot.docs.reduce((latest, doc) => {
-                const docTime = doc.data().timestamp;
-                return !latest || (docTime && docTime > latest) ? docTime : latest;
-              }, null)
-            : null
-        };
-      })
-    );
+    // Group messages by student email
+    const messagesByStudent = {};
+    allChatsSnapshot.docs.forEach(doc => {
+      const data = doc.data();
+      const email = data.studentEmail;
+      if (!messagesByStudent[email]) {
+        messagesByStudent[email] = { count: 0, lastMessageAt: null };
+      }
+      messagesByStudent[email].count++;
+      const timestamp = data.timestamp;
+      if (!messagesByStudent[email].lastMessageAt ||
+        (timestamp && timestamp > messagesByStudent[email].lastMessageAt)) {
+        messagesByStudent[email].lastMessageAt = timestamp;
+      }
+    });
+
+    // Map filtered students with their message counts
+    const studentsWithCounts = filteredStudents.map(student => ({
+      ...student,
+      messageCount: messagesByStudent[student.email]?.count || 0,
+      lastMessageAt: messagesByStudent[student.email]?.lastMessageAt || null
+    }));
 
     // Sort by last message time (most recent first)
     return studentsWithCounts.sort((a, b) => {
@@ -1465,7 +1595,7 @@ export const saveChatSummaryCache = async (studentEmail, summary) => {
     // Use email as document ID (sanitized) for atomic upsert
     const sanitizedEmail = studentEmail.toLowerCase().replace(/[^a-z0-9@._-]/g, '_');
     const cacheDocRef = doc(db, 'chat_summary_cache', sanitizedEmail);
-    
+
     await setDoc(cacheDocRef, {
       studentEmail: studentEmail.toLowerCase(),
       ...summary,
@@ -1511,7 +1641,7 @@ export const getCachedChatSummary = async (studentEmail) => {
 export const subscribeToAnnouncements = (callback, cohortId = null) => {
   if (!db) {
     callback([]);
-    return () => {};
+    return () => { };
   }
   const announcementsRef = collection(db, 'announcements');
   const q = query(announcementsRef, orderBy('createdAt', 'desc'));
@@ -1655,7 +1785,7 @@ export const addWallPostReply = async (postId, replyData) => {
 export const subscribeToWallReplies = (postId, callback) => {
   if (!db) {
     callback([]);
-    return () => {};
+    return () => { };
   }
   const repliesRef = collection(db, 'wall_replies');
   const q = query(
@@ -1677,13 +1807,14 @@ export const subscribeToWallReplies = (postId, callback) => {
 };
 
 // Get all replies (for admin view)
+// H12 FIX: Added limit to prevent slow queries with large datasets
 export const subscribeToAllWallReplies = (callback) => {
   if (!db) {
     callback([]);
-    return () => {};
+    return () => { };
   }
   const repliesRef = collection(db, 'wall_replies');
-  const q = query(repliesRef, orderBy('createdAt', 'desc'));
+  const q = query(repliesRef, orderBy('createdAt', 'desc'), limit(200));
 
   return onSnapshot(q, (snapshot) => {
     const replies = snapshot.docs.map(doc => ({
@@ -1755,7 +1886,7 @@ export const sendDirectMessage = async (studentEmail, messageData) => {
 export const subscribeToDirectMessages = (studentEmail, callback) => {
   if (!db || !studentEmail) {
     callback([]);
-    return () => {};
+    return () => { };
   }
   const messagesRef = collection(db, 'direct_messages');
   const q = query(
@@ -1776,13 +1907,14 @@ export const subscribeToDirectMessages = (studentEmail, callback) => {
 };
 
 // Subscribe to all direct messages (for admin view)
+// H12 FIX: Added limit to prevent slow queries with large datasets
 export const subscribeToAllDirectMessages = (callback) => {
   if (!db) {
     callback([]);
-    return () => {};
+    return () => { };
   }
   const messagesRef = collection(db, 'direct_messages');
-  const q = query(messagesRef, orderBy('createdAt', 'desc'));
+  const q = query(messagesRef, orderBy('createdAt', 'desc'), limit(100));
   return onSnapshot(q, (snapshot) => {
     const messages = snapshot.docs.map(doc => ({
       id: doc.id,
