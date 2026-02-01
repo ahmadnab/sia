@@ -14,6 +14,8 @@ Designed for engagement and ease of use on mobile devices.
 - **Dark/Light Mode**: Seamless theme switching with persistent preferences.
  
 <img width="1239" height="779" alt="Screenshot 2026-02-02 at 12 33 58 AM" src="https://github.com/user-attachments/assets/37d6fb96-842a-4d62-b3b3-7ecbb17d196a" />
+<img width="1393" height="760" alt="Screenshot 2026-02-02 at 12 35 52 AM" src="https://github.com/user-attachments/assets/207426ed-815c-43ba-a0e0-4f1149e09f9a" />
+
 
 ### 📊 Admin Dashboard (Desktop-First)
 A powerful command center for academic staff.
@@ -25,6 +27,8 @@ A powerful command center for academic staff.
 - **Cohort Management**: Easy tools to organize students, utilizing bulk CSV import/export.
 
 <img width="1503" height="776" alt="Screenshot 2026-02-02 at 12 34 29 AM" src="https://github.com/user-attachments/assets/ead6fc96-6c1a-47a5-8376-0cc0904142ef" />
+<img width="1186" height="700" alt="Screenshot 2026-02-02 at 12 35 25 AM" src="https://github.com/user-attachments/assets/eb50bb91-40ff-42fd-8dfa-db1be5c352dc" />
+
 
 
 ## 🛠 Tech Stack
@@ -33,7 +37,6 @@ A powerful command center for academic staff.
 - **Database**: Firebase Firestore (Real-time updates)
 - **Authentication**: Firebase Anonymous Auth & Custom Role Management
 - **AI Engine**: DeepSeek API (Reasoner & Chat models)
-    - *Note: Integration is handled in `src/services/gemini.js` (legacy filename).*
 - **Visualization**: Recharts for analytics data
 - **Icons**: Lucide React
 - **Animations**: Framer Motion for UI transitions
